@@ -33,13 +33,8 @@ const CATEGORIES = [
   {
     title: 'Global',
     queries: [
-      { label: '🇯🇵 Japan', query: 'top 5 japan' },
-      { label: '🇨🇳 China', query: 'top 5 china' },
-      { label: '🇮🇳 India', query: 'top 5 india' },
-      { label: '🇪🇺 Europe', query: 'top 5 europe' },
+      { label: '🇺🇸 US', query: 'top 5 tech' },
       { label: '🇨🇦 Canada', query: 'top 5 canada' },
-      { label: '🇧🇷 Brazil', query: 'top 5 brazil' },
-      { label: '🌍 Emerging', query: 'top 5 emerging markets' },
     ],
   },
   {
