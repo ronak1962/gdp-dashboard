@@ -14,7 +14,7 @@ from advisor import generate_recommendation, analyze_signals
 # Rate limiter: Finnhub free tier allows 30 calls/second
 _rate_semaphore = asyncio.Semaphore(10)
 
-app = FastAPI(title="WealthIQ Stock Peer Analysis & Terminal")
+app = FastAPI(title="Patel Analysis – Portfolio & Wealth Advisory API")
 
 app.add_middleware(
     CORSMiddleware,

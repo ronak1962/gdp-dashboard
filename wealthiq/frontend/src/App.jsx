@@ -13,10 +13,10 @@ export default function App() {
       {/* Header */}
       <header className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 rounded-lg bg-navy flex items-center justify-center">
-          <span className="text-white font-bold text-lg">W</span>
+          <span className="text-white font-bold text-lg">P</span>
         </div>
-        <h1 className="text-2xl font-bold text-navy">WealthIQ</h1>
-        <span className="text-sm text-gray-500 mt-1">Stock Peer Analysis</span>
+        <h1 className="text-2xl font-bold text-navy">Patel Analysis</h1>
+        <span className="text-sm text-gray-500 mt-1">Portfolio & Wealth Advisory Terminal</span>
       </header>
 
       {/* Tabs */}

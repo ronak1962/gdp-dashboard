@@ -221,7 +221,7 @@ export default function Terminal() {
       {/* Top Bar */}
       <div className="bg-[#0f1520] border-b border-gray-800 px-4 py-2 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-orange-400 font-bold text-sm font-mono">WEALTHIQ</span>
+          <span className="text-orange-400 font-bold text-sm font-mono">PATEL ANALYSIS</span>
           <span className="text-gray-600 text-xs">|</span>
           <span className="text-gray-400 text-xs">TERMINAL</span>
         </div>

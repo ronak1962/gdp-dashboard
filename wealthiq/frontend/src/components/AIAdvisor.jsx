@@ -84,7 +84,7 @@ export default function AIAdvisor() {
           <span className="text-2xl">🤖</span>
           <h2 className="text-xl font-bold">AI Advisor</h2>
         </div>
-        <p className="text-blue-200 text-sm">Intelligent buy/sell/hold recommendations powered by multi-signal analysis</p>
+        <p className="text-blue-200 text-sm">Intelligent buy/sell/hold recommendations tailored to your client&apos;s risk profile</p>
       </div>
 
       {/* Investor Profile Selector */}
