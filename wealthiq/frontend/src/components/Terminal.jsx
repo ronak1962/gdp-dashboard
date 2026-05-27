@@ -2,35 +2,64 @@ import { useState, useRef, useEffect } from 'react'
 
 const API = 'http://localhost:8000'
 
-const QUICK_QUERIES = [
-  { label: '🖥 Tech', query: 'top 5 tech' },
-  { label: '🏥 Healthcare', query: 'top 5 healthcare' },
-  { label: '🏦 Finance', query: 'top 5 finance' },
-  { label: '🤖 AI', query: 'top 5 ai' },
-  { label: '💾 Semiconductors', query: 'top 5 semiconductors' },
-  { label: '☁️ Cloud/SaaS', query: 'top 5 cloud' },
-  { label: '🔒 Cybersecurity', query: 'top 5 cybersecurity' },
-  { label: '🧬 Biotech', query: 'top 5 biotech' },
-  { label: '⚡ Energy', query: 'top 5 energy' },
-  { label: '🚗 EV', query: 'top 5 ev' },
-  { label: '🌱 Clean Energy', query: 'top 5 clean energy' },
-  { label: '🪙 Crypto', query: 'top 5 crypto' },
-  { label: '🎮 Gaming', query: 'top 5 gaming' },
-  { label: '🏠 REITs', query: 'top 5 reits' },
-  { label: '🇯🇵 Japan', query: 'top 5 japan' },
-  { label: '🇨🇳 China', query: 'top 5 china' },
-  { label: '🇮🇳 India', query: 'top 5 india' },
-  { label: '🇪🇺 Europe', query: 'top 5 europe' },
-  { label: '🇨🇦 Canada', query: 'top 5 canada' },
-  { label: '🇧🇷 Brazil', query: 'top 5 brazil' },
-  { label: '🌍 Emerging', query: 'top 5 emerging markets' },
-  { label: '💰 Dividend US', query: 'top 10 dividend US' },
-  { label: '💰 Dividend CA', query: 'top 10 dividend canadian' },
-  { label: '👑 Aristocrats', query: 'top 10 dividend aristocrats' },
-  { label: '📈 Growth ETF', query: 'top 10 growth etf' },
-  { label: '💵 Income ETF', query: 'top 10 income etf' },
-  { label: '🛡 Bond ETF', query: 'top 10 bond etf' },
-  { label: '🔎 Low Risk 10%', query: 'low risk 10% return' },
+const CATEGORIES = [
+  {
+    title: 'Sectors',
+    queries: [
+      { label: 'Tech', query: 'top 5 tech' },
+      { label: 'Healthcare', query: 'top 5 healthcare' },
+      { label: 'Finance', query: 'top 5 finance' },
+      { label: 'Energy', query: 'top 5 energy' },
+      { label: 'Industrial', query: 'top 5 industrial' },
+      { label: 'Consumer', query: 'top 5 consumer' },
+    ],
+  },
+  {
+    title: 'Themes',
+    queries: [
+      { label: 'AI', query: 'top 5 ai' },
+      { label: 'Semiconductors', query: 'top 5 semiconductors' },
+      { label: 'Cloud/SaaS', query: 'top 5 cloud' },
+      { label: 'Cybersecurity', query: 'top 5 cybersecurity' },
+      { label: 'Biotech', query: 'top 5 biotech' },
+      { label: 'Fintech', query: 'top 5 fintech' },
+      { label: 'EV', query: 'top 5 ev' },
+      { label: 'Crypto', query: 'top 5 crypto' },
+      { label: 'Clean Energy', query: 'top 5 clean energy' },
+      { label: 'Gaming', query: 'top 5 gaming' },
+      { label: 'REITs', query: 'top 5 reits' },
+    ],
+  },
+  {
+    title: 'Global',
+    queries: [
+      { label: '🇯🇵 Japan', query: 'top 5 japan' },
+      { label: '🇨🇳 China', query: 'top 5 china' },
+      { label: '🇮🇳 India', query: 'top 5 india' },
+      { label: '🇪🇺 Europe', query: 'top 5 europe' },
+      { label: '🇨🇦 Canada', query: 'top 5 canada' },
+      { label: '🇧🇷 Brazil', query: 'top 5 brazil' },
+      { label: '🌍 Emerging', query: 'top 5 emerging markets' },
+    ],
+  },
+  {
+    title: 'Income',
+    queries: [
+      { label: 'Dividend US', query: 'top 10 dividend US' },
+      { label: 'Dividend CA', query: 'top 10 dividend canadian' },
+      { label: 'Aristocrats', query: 'top 10 dividend aristocrats' },
+      { label: 'Income ETF', query: 'top 10 income etf' },
+      { label: 'Bond ETF', query: 'top 10 bond etf' },
+    ],
+  },
+  {
+    title: 'Strategy',
+    queries: [
+      { label: 'Growth ETF', query: 'top 10 growth etf' },
+      { label: 'Low Risk 10%', query: 'low risk 10% return' },
+      { label: 'Small Cap', query: 'top 5 smallcap' },
+    ],
+  },
 ]
 
 function RiskPill({ level }) {
@@ -44,55 +73,51 @@ function RiskPill({ level }) {
 
 function ResultTable({ data }) {
   const results = data?.results || []
-  if (!results.length) return <p className="text-gray-400 text-sm py-4">No results found matching criteria.</p>
+  if (!results.length) return <p className="text-gray-400 text-sm py-4">No results found.</p>
 
   const hasDividend = results.some(r => r.dividendYield)
   const hasReturn = results.some(r => r.return1Y != null)
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-lg border border-gray-800">
       <table className="w-full text-xs">
         <thead>
-          <tr className="text-gray-400 uppercase border-b border-gray-700">
-            <th className="text-left py-2 px-2">#</th>
-            <th className="text-left py-2 px-2">Ticker</th>
-            <th className="text-left py-2 px-2">Name</th>
-            <th className="text-right py-2 px-2">Price</th>
-            <th className="text-right py-2 px-2">Chg%</th>
-            <th className="text-right py-2 px-2">Mkt Cap</th>
-            {hasDividend && <th className="text-right py-2 px-2">Div Yield</th>}
-            {hasReturn && <th className="text-right py-2 px-2">1Y Return</th>}
-            <th className="text-right py-2 px-2">Beta</th>
-            <th className="text-center py-2 px-2">Risk</th>
+          <tr className="bg-gray-800/50 text-gray-400 uppercase">
+            <th className="text-left py-2.5 px-3">#</th>
+            <th className="text-left py-2.5 px-3">Ticker</th>
+            <th className="text-left py-2.5 px-3">Name</th>
+            <th className="text-right py-2.5 px-3">Price</th>
+            <th className="text-right py-2.5 px-3">Change</th>
+            <th className="text-right py-2.5 px-3">Mkt Cap</th>
+            {hasDividend && <th className="text-right py-2.5 px-3">Yield</th>}
+            {hasReturn && <th className="text-right py-2.5 px-3">1Y Ret</th>}
+            <th className="text-center py-2.5 px-3">Risk</th>
           </tr>
         </thead>
         <tbody>
           {results.map((r, i) => (
-            <tr key={r.ticker} className="border-b border-gray-800 hover:bg-gray-800/50 transition">
-              <td className="py-2 px-2 text-gray-500">{i + 1}</td>
-              <td className="py-2 px-2 font-bold text-cyan-400">{r.ticker}</td>
-              <td className="py-2 px-2 text-gray-300 truncate max-w-[160px]">{r.name}</td>
-              <td className="py-2 px-2 text-right font-mono text-white">${r.price?.toFixed(2)}</td>
-              <td className={`py-2 px-2 text-right font-mono ${r.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <tr key={r.ticker} className="border-t border-gray-800/50 hover:bg-gray-800/30">
+              <td className="py-2.5 px-3 text-gray-500">{i + 1}</td>
+              <td className="py-2.5 px-3 font-bold text-cyan-400">{r.ticker}</td>
+              <td className="py-2.5 px-3 text-gray-300 truncate max-w-[140px]">{r.name}</td>
+              <td className="py-2.5 px-3 text-right font-mono text-white">${r.price?.toFixed(2)}</td>
+              <td className={`py-2.5 px-3 text-right font-mono ${r.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                 {r.change >= 0 ? '+' : ''}{r.change?.toFixed(2)}%
               </td>
-              <td className="py-2 px-2 text-right text-gray-300">
+              <td className="py-2.5 px-3 text-right text-gray-300">
                 {r.marketCap ? `$${(r.marketCap / 1000).toFixed(0)}B` : '—'}
               </td>
               {hasDividend && (
-                <td className="py-2 px-2 text-right text-amber-400 font-mono">
+                <td className="py-2.5 px-3 text-right text-amber-400 font-mono">
                   {r.dividendYield ? `${r.dividendYield.toFixed(2)}%` : '—'}
                 </td>
               )}
               {hasReturn && (
-                <td className={`py-2 px-2 text-right font-mono ${(r.return1Y || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                <td className={`py-2.5 px-3 text-right font-mono ${(r.return1Y || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                   {r.return1Y != null ? `${r.return1Y.toFixed(1)}%` : '—'}
                 </td>
               )}
-              <td className="py-2 px-2 text-right text-gray-300 font-mono">
-                {r.beta ? r.beta.toFixed(2) : '—'}
-              </td>
-              <td className="py-2 px-2 text-center">
+              <td className="py-2.5 px-3 text-center">
                 <RiskPill level={r.riskLevel} />
               </td>
             </tr>
@@ -105,152 +130,133 @@ function ResultTable({ data }) {
 
 export default function Terminal() {
   const [query, setQuery] = useState('')
-  const [history, setHistory] = useState([])
+  const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
-  const bottomRef = useRef(null)
+  const [activeQuery, setActiveQuery] = useState('')
+  const inputRef = useRef(null)
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [history])
+    inputRef.current?.focus()
+  }, [])
 
   const runQuery = async (q) => {
     const text = (q || query).trim()
     if (!text) return
     setQuery('')
+    setActiveQuery(text)
     setLoading(true)
-
-    const entry = { query: text, time: new Date().toLocaleTimeString(), data: null, error: null }
-    setHistory(h => [...h, entry])
+    setResult(null)
 
     try {
       const res = await fetch(`${API}/terminal/query?q=${encodeURIComponent(text)}`)
-      if (!res.ok) throw new Error(`API error: ${res.status}`)
-      const json = await res.json()
-      setHistory(h => {
-        const updated = [...h]
-        updated[updated.length - 1] = { ...entry, data: json }
-        return updated
-      })
+      if (!res.ok) throw new Error(`Error: ${res.status}`)
+      setResult(await res.json())
     } catch (e) {
-      setHistory(h => {
-        const updated = [...h]
-        updated[updated.length - 1] = { ...entry, error: e.message }
-        return updated
-      })
+      setResult({ error: e.message })
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden flex flex-col" style={{ minHeight: '600px' }}>
-      {/* Terminal Header */}
-      <div className="bg-gray-800 px-4 py-3 border-b border-gray-700 flex items-center gap-3">
-        <div className="flex gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-red-500"></div>
-          <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-          <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-        </div>
-        <span className="text-gray-300 text-sm font-mono">WealthIQ Terminal</span>
-        <span className="text-gray-500 text-xs ml-auto">Live Market Data • Finnhub</span>
-      </div>
-
-      {/* Quick Query Buttons */}
-      <div className="px-4 py-3 border-b border-gray-800 flex flex-wrap gap-2">
-        {QUICK_QUERIES.map((q) => (
-          <button
-            key={q.query}
-            onClick={() => runQuery(q.query)}
-            disabled={loading}
-            className="px-3 py-1.5 bg-gray-800 border border-gray-600 rounded-md text-xs font-medium text-cyan-400 hover:bg-gray-700 hover:border-cyan-500 transition disabled:opacity-50"
-          >
-            {q.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Output Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4 max-h-[500px]">
-        {history.length === 0 && (
-          <div className="text-gray-500 text-sm space-y-2 py-8">
-            <p className="text-cyan-400 font-mono text-base">Welcome to WealthIQ Terminal</p>
-            <p>Your mini Bloomberg for retail advisors. Ask questions like:</p>
-            <ul className="space-y-1 text-gray-400 font-mono text-xs ml-4">
-              <li>{'\u2192 "top 5 tech" \u2014 Top 5 tech companies by market cap'}</li>
-              <li>{'\u2192 "top 5 healthcare" \u2014 Top 5 healthcare companies'}</li>
-              <li>{'\u2192 "top 10 dividend US" \u2014 Highest dividend yield (US)'}</li>
-              <li>{'\u2192 "top 10 dividend canadian" \u2014 Highest Canadian dividends'}</li>
-              <li>{'\u2192 "low risk 10% return" \u2014 Low-risk stocks with 10%+ annual return'}</li>
-              <li>{'\u2192 "top 5 energy" \u2014 Top energy sector stocks'}</li>
-              <li>{'\u2192 "top 10 etf" \u2014 Top ETFs by market cap'}</li>
-            </ul>
-          </div>
-        )}
-
-        {history.map((entry, i) => (
-          <div key={i} className="space-y-2">
-            {/* Query line */}
-            <div className="flex items-center gap-2">
-              <span className="text-emerald-400 font-mono text-xs">$</span>
-              <span className="text-white font-mono text-sm">{entry.query}</span>
-              <span className="text-gray-600 text-xs ml-auto">{entry.time}</span>
-            </div>
-
-            {/* Result */}
-            {entry.error && (
-              <div className="text-red-400 text-xs font-mono pl-4">{entry.error}</div>
-            )}
-            {entry.data && entry.data.results && (
-              <div className="pl-2">
-                <div className="text-gray-400 text-xs mb-2 font-mono">
-                  {entry.data.sector && `Sector: ${entry.data.sector.toUpperCase()} • `}
-                  {entry.data.country && `Country: ${entry.data.country} • `}
-                  {entry.data.minReturn != null && `Min Return: ${entry.data.minReturn}% • Max Risk: ${entry.data.maxRisk} • `}
-                  Found: {entry.data.results.length} results
-                </div>
-                <ResultTable data={entry.data} />
-              </div>
-            )}
-            {entry.data && entry.data.message && (
-              <div className="text-amber-400 text-xs font-mono pl-4">
-                {entry.data.message}
-                <ul className="mt-1 space-y-0.5 text-gray-400">
-                  {entry.data.examples?.map(ex => <li key={ex}>→ {ex}</li>)}
-                </ul>
-              </div>
-            )}
-            {entry.data === null && !entry.error && (
-              <div className="text-gray-500 text-xs font-mono pl-4 animate-pulse">Processing...</div>
-            )}
-          </div>
-        ))}
-        <div ref={bottomRef} />
-      </div>
-
-      {/* Input Bar */}
-      <div className="border-t border-gray-700 px-4 py-3 bg-gray-800">
-        <div className="flex items-center gap-2">
-          <span className="text-emerald-400 font-mono text-sm">$</span>
+    <div className="space-y-4">
+      {/* Search Bar */}
+      <div className="bg-gray-900 rounded-xl p-4 border border-gray-700">
+        <div className="flex items-center gap-3">
+          <div className="text-emerald-400 text-lg">$</div>
           <input
-            className="flex-1 bg-transparent text-white font-mono text-sm placeholder-gray-500 focus:outline-none"
-            placeholder="Type your query... (e.g. top 5 tech, highest dividend canadian)"
+            ref={inputRef}
+            className="flex-1 bg-transparent text-white text-sm font-mono placeholder-gray-500 focus:outline-none"
+            placeholder="Search... (e.g. top 5 tech, dividend US, low risk 10% return)"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && runQuery()}
-            disabled={loading}
           />
-          {loading && (
-            <div className="w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
-          )}
           <button
             onClick={() => runQuery()}
             disabled={loading || !query.trim()}
-            className="px-3 py-1 bg-cyan-600 text-white text-xs font-medium rounded hover:bg-cyan-500 transition disabled:opacity-50"
+            className="px-4 py-2 bg-cyan-600 text-white text-xs font-semibold rounded-lg hover:bg-cyan-500 transition disabled:opacity-40"
           >
-            Run
+            Search
           </button>
         </div>
       </div>
+
+      {/* Category Buttons */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 space-y-3">
+        {CATEGORIES.map((cat) => (
+          <div key={cat.title}>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold mb-1.5">{cat.title}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {cat.queries.map((q) => (
+                <button
+                  key={q.query}
+                  onClick={() => runQuery(q.query)}
+                  disabled={loading}
+                  className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition border
+                    ${activeQuery === q.query
+                      ? 'bg-navy text-white border-navy'
+                      : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-navy hover:text-white hover:border-navy'
+                    } disabled:opacity-40`}
+                >
+                  {q.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Loading */}
+      {loading && (
+        <div className="bg-gray-900 rounded-xl p-8 border border-gray-700 text-center">
+          <div className="inline-block w-6 h-6 border-3 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-gray-400 text-sm mt-3">Fetching live data for: <span className="text-cyan-400 font-mono">{activeQuery}</span></p>
+        </div>
+      )}
+
+      {/* Results */}
+      {result && !loading && (
+        <div className="bg-gray-900 rounded-xl p-4 border border-gray-700">
+          {result.error ? (
+            <p className="text-red-400 text-sm">{result.error}</p>
+          ) : result.results ? (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-gray-400 text-xs font-mono">
+                  {result.sector && <span className="text-cyan-400">{result.sector.toUpperCase()}</span>}
+                  {result.country && <span className="text-cyan-400">{result.country}</span>}
+                  {result.minReturn != null && <span className="text-cyan-400">Low Risk ≥{result.minReturn}% Return</span>}
+                  {' • '}{result.results.length} results
+                </p>
+              </div>
+              <ResultTable data={result} />
+            </div>
+          ) : result.message ? (
+            <div className="text-gray-400 text-sm">
+              <p className="text-amber-400 mb-2">{result.message}</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
+                {result.examples?.map(ex => (
+                  <button
+                    key={ex}
+                    onClick={() => runQuery(ex)}
+                    className="text-left text-xs text-gray-500 hover:text-cyan-400 font-mono transition"
+                  >
+                    → {ex}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!result && !loading && (
+        <div className="bg-gray-900 rounded-xl p-6 border border-gray-700 text-center">
+          <p className="text-gray-500 text-sm">Click a category above or type a query to get started</p>
+        </div>
+      )}
     </div>
   )
 }
