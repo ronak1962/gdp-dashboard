@@ -4,7 +4,10 @@ import httpx
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from screener import SECTOR_MAP, DIVIDEND_UNIVERSE, ETF_UNIVERSE, CANADIAN_DIVIDEND
+from screener import (
+    SECTOR_MAP, DIVIDEND_US, DIVIDEND_CANADIAN, DIVIDEND_GLOBAL,
+    DIVIDEND_ARISTOCRATS, ETF_UNIVERSE, ETF_GROWTH, ETF_INCOME, ETF_BOND,
+)
 from advisor import generate_recommendation, analyze_signals
 
 # Rate limiter: Finnhub free tier allows 30 calls/second
@@ -80,7 +83,7 @@ async def _fetch_stock_full(sym: str) -> dict | None:
         return None
 
 
-async def _fetch_batch(symbols: list[str], batch_size: int = 5) -> list[dict]:
+async def _fetch_batch(symbols: list[str], batch_size: int = 3) -> list[dict]:
     """Fetch stocks in small batches to respect rate limits."""
     results = []
     for i in range(0, len(symbols), batch_size):
@@ -88,7 +91,7 @@ async def _fetch_batch(symbols: list[str], batch_size: int = 5) -> list[dict]:
         batch_results = await asyncio.gather(*[_fetch_stock_full(s) for s in batch])
         results.extend(batch_results)
         if i + batch_size < len(symbols):
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(1.0)
     return [r for r in results if r is not None]
 
 
@@ -307,17 +310,26 @@ async def top_by_sector(sector: str, limit: int = Query(default=5, ge=1, le=20))
 
 @app.get("/terminal/dividends")
 async def top_dividends(
-    country: str = Query(default="US", description="US or CA"),
+    country: str = Query(default="US", description="US, CA, global, or aristocrats"),
     limit: int = Query(default=10, ge=1, le=20),
 ):
     """
     Get highest dividend-yielding stocks.
-    Example: /terminal/dividends?country=US&limit=10
+    Examples:
+      /terminal/dividends?country=US&limit=10
+      /terminal/dividends?country=CA&limit=10
+      /terminal/dividends?country=global&limit=10
+      /terminal/dividends?country=aristocrats&limit=10
     """
-    if country.upper() == "CA":
-        universe = CANADIAN_DIVIDEND
+    country_upper = country.upper()
+    if country_upper == "CA":
+        universe = DIVIDEND_CANADIAN
+    elif country_upper == "GLOBAL":
+        universe = DIVIDEND_GLOBAL
+    elif country_upper in ("ARISTOCRATS", "ARISTOCRAT"):
+        universe = DIVIDEND_ARISTOCRATS
     else:
-        universe = DIVIDEND_UNIVERSE
+        universe = DIVIDEND_US
 
     stocks = await _fetch_batch(universe[:limit * 2])
     stocks = [s for s in stocks if s.get("dividendYield")]
@@ -328,7 +340,7 @@ async def top_dividends(
         s["riskLevel"] = rl
 
     stocks.sort(key=lambda x: x.get("dividendYield") or 0, reverse=True)
-    return {"country": country.upper(), "results": stocks[:limit]}
+    return {"country": country_upper, "results": stocks[:limit]}
 
 
 @app.get("/terminal/low-risk")
@@ -341,7 +353,7 @@ async def low_risk_returns(
     Find low-risk stocks/ETFs with target annual return.
     Example: /terminal/low-risk?min_return=10&max_risk=45&limit=10
     """
-    universe = ETF_UNIVERSE + DIVIDEND_UNIVERSE
+    universe = ETF_UNIVERSE + DIVIDEND_US
     seen = set()
     unique = []
     for s in universe:
@@ -369,13 +381,9 @@ async def low_risk_returns(
 async def natural_query(q: str = Query(..., description="Natural language query")):
     """
     Process a natural-language-style query and route to the right screener.
-    Examples:
-      - "top 5 tech" → top 5 technology stocks
-      - "top 5 healthcare" → top 5 healthcare stocks
-      - "highest dividend US" → top dividend stocks US
-      - "highest dividend canadian" → top Canadian dividend stocks
-      - "low risk 10% return" → low risk with 10% return
+    Supports sectors, regions, themes, dividends, ETFs, and risk/return filtering.
     """
+    import re
     q_lower = q.lower()
 
     # Detect limit
@@ -385,35 +393,45 @@ async def natural_query(q: str = Query(..., description="Natural language query"
             limit = min(int(word), 20)
             break
 
-    # Detect sector queries
-    for sector_key in ["technology", "tech", "healthcare", "health", "finance",
-                       "financial", "banking", "energy", "oil", "consumer", "retail", "etf"]:
-        if sector_key in q_lower:
-            return await top_by_sector(sector_key, limit)
-
-    # Detect dividend queries
-    if "dividend" in q_lower:
-        country = "CA" if "canad" in q_lower else "US"
-        return await top_dividends(country, limit)
+    # Detect dividend queries first (before sector matching)
+    if "dividend" in q_lower or "yield" in q_lower:
+        if "aristocrat" in q_lower:
+            return await top_dividends("aristocrats", limit)
+        elif "canad" in q_lower:
+            return await top_dividends("CA", limit)
+        elif "global" in q_lower or "world" in q_lower:
+            return await top_dividends("global", limit)
+        else:
+            return await top_dividends("US", limit)
 
     # Detect low risk + return queries
     if "low risk" in q_lower or "safe" in q_lower or "conservative" in q_lower:
-        import re
         ret_match = re.search(r"(\d+)\s*%?\s*return", q_lower)
         min_ret = float(ret_match.group(1)) if ret_match else 10.0
         return await low_risk_returns(min_ret, 45, limit)
 
-    # Default: treat as sector search or return help
+    # Match against all sector/theme/region keys (longest match first)
+    sector_keys = sorted(SECTOR_MAP.keys(), key=len, reverse=True)
+    for sector_key in sector_keys:
+        if sector_key in q_lower:
+            return await top_by_sector(sector_key, limit)
+
+    # Default help
     return {
         "message": "I understand queries like:",
         "examples": [
-            "top 5 tech",
-            "top 5 healthcare",
-            "top 10 dividend US",
-            "top 5 dividend canadian",
+            "top 5 tech", "top 5 healthcare", "top 5 finance",
+            "top 5 semiconductors", "top 5 ai", "top 5 cybersecurity",
+            "top 5 biotech", "top 5 fintech", "top 5 cloud",
+            "top 5 ev", "top 5 crypto", "top 5 gaming",
+            "top 5 clean energy", "top 5 reits",
+            "top 5 japan", "top 5 china", "top 5 india",
+            "top 5 europe", "top 5 canada", "top 5 brazil",
+            "top 5 emerging markets",
+            "top 10 dividend US", "top 10 dividend canadian",
+            "top 10 dividend global", "dividend aristocrats",
+            "top 10 etf", "income etf", "growth etf", "bond etf",
             "low risk 10% return",
-            "top 5 energy",
-            "top 5 finance",
         ]
     }
 
