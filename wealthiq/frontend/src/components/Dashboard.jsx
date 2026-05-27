@@ -5,14 +5,14 @@ const API = 'http://localhost:8000'
 function IndexCard({ data }) {
   const isUp = data.change >= 0
   return (
-    <div className="bg-[#141a24] border border-gray-800 rounded-lg p-3">
+    <div className={`rounded-lg p-3 border ${isUp ? 'bg-green-900/20 border-green-800/50' : 'bg-red-900/20 border-red-800/50'}`}>
       <div className="flex items-center justify-between mb-1">
         <span className="text-gray-400 text-[10px] uppercase">{data.name}</span>
         <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${isUp ? 'text-green-400 bg-green-400/10' : 'text-red-400 bg-red-400/10'}`}>
           {isUp ? '▲' : '▼'} {Math.abs(data.change)?.toFixed(2)}%
         </span>
       </div>
-      <p className="text-white font-mono text-lg font-bold">${data.price?.toFixed(2)}</p>
+      <p className={`font-mono text-lg font-bold ${isUp ? 'text-green-300' : 'text-red-300'}`}>${data.price?.toFixed(2)}</p>
       <div className="flex justify-between text-[10px] text-gray-500 mt-1">
         <span>H: {data.high?.toFixed(2)}</span>
         <span>L: {data.low?.toFixed(2)}</span>
@@ -24,11 +24,11 @@ function IndexCard({ data }) {
 function MoverRow({ data }) {
   const isUp = data.change >= 0
   return (
-    <div className="flex items-center justify-between py-2 border-b border-gray-800 last:border-0">
+    <div className={`flex items-center justify-between py-2 px-2 rounded mb-1 ${isUp ? 'bg-green-900/10' : 'bg-red-900/10'}`}>
       <span className="text-orange-400 font-mono text-xs font-bold w-12">{data.ticker}</span>
-      <span className="text-white font-mono text-xs">${data.price?.toFixed(2)}</span>
+      <span className={`font-mono text-xs font-bold ${isUp ? 'text-green-300' : 'text-red-300'}`}>${data.price?.toFixed(2)}</span>
       <span className={`font-mono text-xs font-bold ${isUp ? 'text-green-400' : 'text-red-400'}`}>
-        {isUp ? '+' : ''}{data.change?.toFixed(2)}%
+        {isUp ? '▲' : '▼'} {Math.abs(data.change)?.toFixed(2)}%
       </span>
     </div>
   )
