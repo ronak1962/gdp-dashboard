@@ -7,6 +7,7 @@ import RangeBar from './components/RangeBar'
 import AppetiteProfile from './components/AppetiteProfile'
 import Terminal from './components/Terminal'
 import AIAdvisor from './components/AIAdvisor'
+import Discover from './components/Discover'
 
 const API = 'http://localhost:8000'
 const CHIPS = ['AAPL', 'MSFT', 'NVDA', 'TSLA', 'AMZN', 'GOOGL', 'META', 'JPM']
@@ -69,6 +70,14 @@ export default function App() {
           }`}
         >
           🤖 AI Advisor
+        </button>
+        <button
+          onClick={() => setTab('discover')}
+          className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
+            tab === 'discover' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          Discover
         </button>
         <button
           onClick={() => setTab('analysis')}
@@ -162,6 +171,8 @@ export default function App() {
       {tab === 'terminal' && <Terminal />}
 
       {tab === 'advisor' && <AIAdvisor />}
+
+      {tab === 'discover' && <Discover />}
     </div>
   )
 }

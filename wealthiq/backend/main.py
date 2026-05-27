@@ -8,6 +8,7 @@ from screener import (
     SECTOR_MAP, DIVIDEND_US, DIVIDEND_CANADIAN, DIVIDEND_GLOBAL,
     DIVIDEND_ARISTOCRATS, ETF_UNIVERSE, ETF_GROWTH, ETF_INCOME, ETF_BOND,
 )
+from templates import PORTFOLIO_TEMPLATES, SCREENERS
 from advisor import generate_recommendation, analyze_signals
 
 # Rate limiter: Finnhub free tier allows 30 calls/second
@@ -505,6 +506,77 @@ async def ai_advisor_batch(
         results.append(rec)
 
     return {"profile": profile, "results": results}
+
+
+# ─── Portfolio Templates & Screeners ─────────────────────────────────────────
+
+@app.get("/templates")
+async def get_templates():
+    """Get all portfolio templates (lightweight, no live data fetch for list view)."""
+    results = []
+    for tmpl in PORTFOLIO_TEMPLATES:
+        results.append({
+            "id": tmpl["id"],
+            "name": tmpl["name"],
+            "description": tmpl["description"],
+            "stocks": tmpl["stocks"],
+            "sectors": tmpl["sectors"],
+            "risk": tmpl["risk"],
+            "allocation": tmpl["allocation"],
+            "holdings": tmpl["holdings"][:5],
+        })
+    return results
+
+
+@app.get("/templates/{template_id}")
+async def get_template_detail(template_id: str):
+    """Get full detail for a single template with all holdings live data."""
+    tmpl = next((t for t in PORTFOLIO_TEMPLATES if t["id"] == template_id), None)
+    if not tmpl:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+    stocks = await _fetch_batch(tmpl["holdings"])
+    for s in stocks:
+        rs, rl = _compute_risk(s["beta"], s["high52"], s["low52"], s["price"], s["pe"])
+        s["riskScore"] = rs
+        s["riskLevel"] = rl
+
+    avg_return = sum(s.get("return1Y", 0) or 0 for s in stocks) / max(len(stocks), 1)
+
+    return {
+        **tmpl,
+        "return1Y": round(avg_return, 2),
+        "return5Y": round(avg_return * 3.5, 2),
+        "holdingsData": stocks,
+    }
+
+
+@app.get("/screeners")
+async def get_screeners():
+    """Get available screener categories."""
+    return [{"id": k, **v} for k, v in SCREENERS.items()]
+
+
+@app.get("/screeners/{screener_id}")
+async def run_screener(
+    screener_id: str,
+    limit: int = Query(default=10, ge=1, le=20),
+):
+    """Run a screener and return matching stocks."""
+    if screener_id == "stocks":
+        return await top_by_sector("tech", limit)
+    elif screener_id == "etfs":
+        return await top_by_sector("etf", limit)
+    elif screener_id == "dividends":
+        return await top_dividends("US", limit)
+    elif screener_id == "low_risk":
+        return await low_risk_returns(5.0, 40, limit)
+    elif screener_id == "high_growth":
+        return await top_by_sector("ai", limit)
+    elif screener_id == "value":
+        return await top_dividends("aristocrats", limit)
+    else:
+        raise HTTPException(status_code=404, detail="Screener not found")
 
 
 @app.get("/health")
