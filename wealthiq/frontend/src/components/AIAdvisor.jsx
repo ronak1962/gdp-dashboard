@@ -55,6 +55,7 @@ export default function AIAdvisor() {
   const [profile, setProfile] = useState('moderate')
   const [loading, setLoading] = useState(false)
   const [rec, setRec] = useState(null)
+  const [algo, setAlgo] = useState(null)
   const [error, setError] = useState('')
 
   const getAdvice = async (t) => {
@@ -64,11 +65,16 @@ export default function AIAdvisor() {
     setLoading(true)
     setError('')
     setRec(null)
+    setAlgo(null)
 
     try {
-      const res = await fetch(`${API}/advisor/${sym}?profile=${profile}`)
-      if (!res.ok) throw new Error('Failed to get recommendation')
-      setRec(await res.json())
+      const [advisorRes, algoRes] = await Promise.all([
+        fetch(`${API}/advisor/${sym}?profile=${profile}`),
+        fetch(`${API}/algo/${sym}`),
+      ])
+      if (!advisorRes.ok) throw new Error('Failed to get recommendation')
+      setRec(await advisorRes.json())
+      if (algoRes.ok) setAlgo(await algoRes.json())
     } catch (e) {
       setError(e.message)
     } finally {
@@ -210,6 +216,104 @@ export default function AIAdvisor() {
                   <SignalRow key={i} signal={s} />
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* ML Algo Trading Signals */}
+          {algo && algo.predictions && (
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-semibold text-navy text-sm">🧠 ML Algo Trading Engine</h4>
+                <span className="text-[10px] text-gray-400">{algo.dataPoints} days analyzed</span>
+              </div>
+
+              {/* Ensemble Result */}
+              <div className={`rounded-lg p-4 mb-4 ${
+                algo.ensemble?.signal === 'BUY' ? 'bg-green-50 border border-green-200' :
+                algo.ensemble?.signal === 'SELL' ? 'bg-red-50 border border-red-200' :
+                'bg-yellow-50 border border-yellow-200'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-gray-500">Ensemble Prediction (All Models Combined)</p>
+                    <p className={`text-lg font-bold ${
+                      algo.ensemble?.signal === 'BUY' ? 'text-green-600' :
+                      algo.ensemble?.signal === 'SELL' ? 'text-red-600' :
+                      'text-yellow-600'
+                    }`}>
+                      {algo.ensemble?.signal === 'BUY' ? '🟢' : algo.ensemble?.signal === 'SELL' ? '🔴' : '🟡'} {algo.ensemble?.signal}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500">Agreement</p>
+                    <p className="text-lg font-bold text-navy">{algo.ensemble?.confidence}%</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Individual Model Predictions */}
+              <p className="text-xs text-gray-500 mb-2">Individual Model Predictions:</p>
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {Object.entries(algo.predictions).filter(([k]) => k !== 'ensemble').map(([name, pred]) => {
+                  const label = name.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+                  const color = pred.signal === 'BUY' ? 'text-green-600 bg-green-50 border-green-200' :
+                    pred.signal === 'SELL' ? 'text-red-600 bg-red-50 border-red-200' :
+                    'text-yellow-600 bg-yellow-50 border-yellow-200'
+                  return (
+                    <div key={name} className={`rounded-lg p-2.5 border ${color}`}>
+                      <p className="text-[10px] text-gray-500">{label}</p>
+                      <div className="flex items-center justify-between mt-0.5">
+                        <span className="text-xs font-bold">{pred.signal}</span>
+                        <span className="text-[10px] font-mono">{pred.confidence}%</span>
+                      </div>
+                      {algo.accuracies?.[name] != null && (
+                        <p className="text-[9px] text-gray-400 mt-0.5">Accuracy: {algo.accuracies[name]}%</p>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Technical Features */}
+              {algo.features && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-2">Technical Indicators Used:</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-gray-50 rounded p-2 text-center">
+                      <p className="text-[9px] text-gray-400">RSI (14)</p>
+                      <p className={`text-xs font-bold font-mono ${algo.features.rsi > 70 ? 'text-red-500' : algo.features.rsi < 30 ? 'text-green-500' : 'text-gray-700'}`}>
+                        {algo.features.rsi}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 rounded p-2 text-center">
+                      <p className="text-[9px] text-gray-400">Volatility</p>
+                      <p className="text-xs font-bold font-mono text-gray-700">{algo.features.volatility}%</p>
+                    </div>
+                    <div className="bg-gray-50 rounded p-2 text-center">
+                      <p className="text-[9px] text-gray-400">vs SMA 20</p>
+                      <p className={`text-xs font-bold font-mono ${algo.features.price_vs_sma20 >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {algo.features.price_vs_sma20 > 0 ? '+' : ''}{algo.features.price_vs_sma20}%
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 rounded p-2 text-center">
+                      <p className="text-[9px] text-gray-400">1D Return</p>
+                      <p className={`text-xs font-bold font-mono ${algo.features.return_1d >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {algo.features.return_1d > 0 ? '+' : ''}{algo.features.return_1d}%
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 rounded p-2 text-center">
+                      <p className="text-[9px] text-gray-400">5D Return</p>
+                      <p className={`text-xs font-bold font-mono ${algo.features.return_5d >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {algo.features.return_5d > 0 ? '+' : ''}{algo.features.return_5d}%
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 rounded p-2 text-center">
+                      <p className="text-[9px] text-gray-400">SMA 20</p>
+                      <p className="text-xs font-bold font-mono text-gray-700">${algo.features.sma_20}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

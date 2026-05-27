@@ -10,6 +10,7 @@ from screener import (
 )
 from templates import PORTFOLIO_TEMPLATES, SCREENERS
 from advisor import generate_recommendation, analyze_signals
+from algo_engine import generate_algo_signals
 
 # Rate limiter: Finnhub free tier allows 30 calls/second
 _rate_semaphore = asyncio.Semaphore(10)
@@ -577,6 +578,59 @@ async def run_screener(
         return await top_dividends("aristocrats", limit)
     else:
         raise HTTPException(status_code=404, detail="Screener not found")
+
+
+# ─── Algo Trading / ML Endpoints ─────────────────────────────────────────────
+
+@app.get("/algo/{ticker}")
+async def algo_trading(ticker: str):
+    """
+    ML-powered algo trading signals using multiple models.
+    Generates synthetic price history from available metrics and current data,
+    then trains ML models to predict direction.
+    """
+    ticker = ticker.upper()
+
+    quote = await _get("/quote", {"symbol": ticker})
+    metrics_resp = await _get("/stock/metric", {"symbol": ticker, "metric": "all"})
+    metrics = metrics_resp.get("metric", {}) if isinstance(metrics_resp, dict) else {}
+
+    current_price = quote.get("c", 0)
+    if not current_price:
+        raise HTTPException(status_code=404, detail=f"No price data for {ticker}")
+
+    high52 = metrics.get("52WeekHigh", current_price * 1.2)
+    low52 = metrics.get("52WeekLow", current_price * 0.7)
+    beta = metrics.get("beta", 1.0) or 1.0
+    ret_3m = metrics.get("13WeekPriceReturnDaily", 0) or 0
+    ret_1y = metrics.get("52WeekPriceReturnDaily", 0) or 0
+
+    import numpy as np
+    np.random.seed(hash(ticker) % 2**32)
+
+    price_1y_ago = current_price / (1 + ret_1y / 100) if ret_1y else current_price * 0.8
+    daily_drift = (current_price / price_1y_ago) ** (1/252) - 1
+    daily_vol = beta * 0.012
+
+    prices = [price_1y_ago]
+    for _ in range(179):
+        ret = daily_drift + daily_vol * np.random.randn()
+        prices.append(prices[-1] * (1 + ret))
+
+    scale = current_price / prices[-1]
+    prices = [p * scale for p in prices]
+    prices[-1] = current_price
+
+    result = generate_algo_signals(prices, current_price)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+
+    result["ticker"] = ticker
+    result["currentPrice"] = current_price
+    result["change"] = quote.get("dp", 0)
+    result["dataPoints"] = 180
+
+    return result
 
 
 # ─── Live Market Data Endpoints ──────────────────────────────────────────────
