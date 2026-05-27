@@ -15,44 +15,10 @@ const CATEGORIES = [
     ],
   },
   {
-    title: 'Themes',
-    queries: [
-      { label: 'AI', query: 'top 5 ai' },
-      { label: 'Semiconductors', query: 'top 5 semiconductors' },
-      { label: 'Cloud/SaaS', query: 'top 5 cloud' },
-      { label: 'Cybersecurity', query: 'top 5 cybersecurity' },
-      { label: 'Biotech', query: 'top 5 biotech' },
-      { label: 'Fintech', query: 'top 5 fintech' },
-      { label: 'EV', query: 'top 5 ev' },
-      { label: 'Crypto', query: 'top 5 crypto' },
-      { label: 'Clean Energy', query: 'top 5 clean energy' },
-      { label: 'Gaming', query: 'top 5 gaming' },
-      { label: 'REITs', query: 'top 5 reits' },
-    ],
-  },
-  {
     title: 'Global',
     queries: [
       { label: '🇺🇸 US', query: 'top 5 tech' },
       { label: '🇨🇦 Canada', query: 'top 5 canada' },
-    ],
-  },
-  {
-    title: 'Income',
-    queries: [
-      { label: 'Dividend US', query: 'top 10 dividend US' },
-      { label: 'Dividend CA', query: 'top 10 dividend canadian' },
-      { label: 'Aristocrats', query: 'top 10 dividend aristocrats' },
-      { label: 'Income ETF', query: 'top 10 income etf' },
-      { label: 'Bond ETF', query: 'top 10 bond etf' },
-    ],
-  },
-  {
-    title: 'Strategy',
-    queries: [
-      { label: 'Growth ETF', query: 'top 10 growth etf' },
-      { label: 'Low Risk 10%', query: 'low risk 10% return' },
-      { label: 'Small Cap', query: 'top 5 smallcap' },
     ],
   },
 ]
