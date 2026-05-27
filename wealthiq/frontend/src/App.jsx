@@ -5,6 +5,7 @@ import AIAdvisor from './components/AIAdvisor'
 import Discover from './components/Discover'
 import StockAnalysis from './components/StockAnalysis'
 import Dashboard from './components/Dashboard'
+import Chart from './components/Chart'
 
 export default function App() {
   const [tab, setTab] = useState('dashboard')
@@ -37,6 +38,14 @@ export default function App() {
           }`}
         >
           ⌨ Terminal
+        </button>
+        <button
+          onClick={() => setTab('charts')}
+          className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
+            tab === 'charts' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          📈 Charts
         </button>
         <button
           onClick={() => setTab('analysis')}
@@ -74,6 +83,7 @@ export default function App() {
 
       {tab === 'dashboard' && <Dashboard />}
       {tab === 'terminal' && <Terminal />}
+      {tab === 'charts' && <Chart />}
       {tab === 'analysis' && <StockAnalysis />}
       {tab === 'advisor' && <AIAdvisor />}
       {tab === 'discover' && <Discover />}
