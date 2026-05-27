@@ -5,6 +5,8 @@ import PeerTable from './components/PeerTable'
 import PortfolioPanel from './components/PortfolioPanel'
 import RangeBar from './components/RangeBar'
 import AppetiteProfile from './components/AppetiteProfile'
+import Terminal from './components/Terminal'
+import AIAdvisor from './components/AIAdvisor'
 
 const API = 'http://localhost:8000'
 const CHIPS = ['AAPL', 'MSFT', 'NVDA', 'TSLA', 'AMZN', 'GOOGL', 'META', 'JPM']
@@ -15,7 +17,7 @@ export default function App() {
   const [peers, setPeers] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [tab, setTab] = useState('analysis')
+  const [tab, setTab] = useState('terminal')
 
   const search = useCallback(async (sym) => {
     const t = (sym || ticker).trim().toUpperCase()
@@ -51,7 +53,23 @@ export default function App() {
       </header>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-4 flex-wrap">
+        <button
+          onClick={() => setTab('terminal')}
+          className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
+            tab === 'terminal' ? 'bg-gray-900 text-cyan-400 ring-1 ring-cyan-500' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          ⌨ Terminal
+        </button>
+        <button
+          onClick={() => setTab('advisor')}
+          className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
+            tab === 'advisor' ? 'bg-gradient-to-r from-navy to-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          🤖 AI Advisor
+        </button>
         <button
           onClick={() => setTab('analysis')}
           className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
@@ -140,6 +158,10 @@ export default function App() {
       )}
 
       {tab === 'portfolio' && <PortfolioPanel />}
+
+      {tab === 'terminal' && <Terminal />}
+
+      {tab === 'advisor' && <AIAdvisor />}
     </div>
   )
 }

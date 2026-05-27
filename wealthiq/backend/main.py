@@ -1,9 +1,16 @@
 import os
+import asyncio
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="WealthIQ Stock Peer Analysis")
+from screener import SECTOR_MAP, DIVIDEND_UNIVERSE, ETF_UNIVERSE, CANADIAN_DIVIDEND
+from advisor import generate_recommendation, analyze_signals
+
+# Rate limiter: Finnhub free tier allows 30 calls/second
+_rate_semaphore = asyncio.Semaphore(10)
+
+app = FastAPI(title="WealthIQ Stock Peer Analysis & Terminal")
 
 app.add_middleware(
     CORSMiddleware,
@@ -20,14 +27,69 @@ BASE = "https://finnhub.io/api/v1"
 async def _get(path: str, params: dict | None = None) -> dict | list:
     params = params or {}
     params["token"] = FINNHUB_KEY
-    async with httpx.AsyncClient(timeout=10) as client:
-        r = await client.get(f"{BASE}{path}", params=params)
-        if r.status_code != 200:
-            raise HTTPException(status_code=r.status_code, detail="Finnhub API error")
-        data = r.json()
-        if isinstance(data, dict) and "error" in data:
-            raise HTTPException(status_code=401, detail=data["error"])
-        return data
+    async with _rate_semaphore:
+        async with httpx.AsyncClient(timeout=15) as client:
+            for attempt in range(3):
+                r = await client.get(f"{BASE}{path}", params=params)
+                if r.status_code == 429:
+                    await asyncio.sleep(1.0 * (attempt + 1))
+                    continue
+                if r.status_code != 200:
+                    raise HTTPException(status_code=r.status_code, detail="Finnhub API error")
+                data = r.json()
+                if isinstance(data, dict) and "error" in data:
+                    if "limit" in data.get("error", "").lower():
+                        await asyncio.sleep(1.0 * (attempt + 1))
+                        continue
+                    raise HTTPException(status_code=401, detail=data["error"])
+                return data
+            raise HTTPException(status_code=429, detail="Rate limit exceeded")
+
+
+async def _fetch_stock_full(sym: str) -> dict | None:
+    """Fetch quote + profile + metrics for a single ticker. Returns None on failure."""
+    try:
+        quote = await _get("/quote", {"symbol": sym})
+        profile = await _get("/stock/profile2", {"symbol": sym})
+        metrics_resp = await _get("/stock/metric", {"symbol": sym, "metric": "all"})
+
+        metrics = metrics_resp.get("metric", {}) if isinstance(metrics_resp, dict) else {}
+        price = quote.get("c", 0)
+        if not price or price == 0:
+            return None
+        return {
+            "ticker": sym,
+            "name": profile.get("name", sym),
+            "sector": profile.get("finnhubIndustry", ""),
+            "country": profile.get("country", ""),
+            "price": price,
+            "change": quote.get("dp", 0),
+            "marketCap": profile.get("marketCapitalization", 0),
+            "pe": metrics.get("peNormalizedAnnual") or metrics.get("peTTM"),
+            "beta": metrics.get("beta"),
+            "high52": metrics.get("52WeekHigh", quote.get("h")),
+            "low52": metrics.get("52WeekLow", quote.get("l")),
+            "dividendYield": metrics.get("currentDividendYieldTTM"),
+            "dividendPerShare": metrics.get("dividendPerShareAnnual"),
+            "dividendGrowth5Y": metrics.get("dividendGrowthRate5Y"),
+            "return1Y": metrics.get("52WeekPriceReturnDaily"),
+            "returnYTD": metrics.get("yearToDatePriceReturnDaily"),
+            "return3M": metrics.get("13WeekPriceReturnDaily"),
+        }
+    except Exception:
+        return None
+
+
+async def _fetch_batch(symbols: list[str], batch_size: int = 5) -> list[dict]:
+    """Fetch stocks in small batches to respect rate limits."""
+    results = []
+    for i in range(0, len(symbols), batch_size):
+        batch = symbols[i:i + batch_size]
+        batch_results = await asyncio.gather(*[_fetch_stock_full(s) for s in batch])
+        results.extend(batch_results)
+        if i + batch_size < len(symbols):
+            await asyncio.sleep(0.5)
+    return [r for r in results if r is not None]
 
 
 def _compute_risk(beta: float | None, high52: float | None, low52: float | None,
@@ -76,6 +138,8 @@ def _compute_risk(beta: float | None, high52: float | None, low52: float | None,
         level = "High"
     return score, level
 
+
+# ─── Original Endpoints ─────────────────────────────────────────────────────
 
 @app.get("/analyze/{ticker}")
 async def analyze(ticker: str):
@@ -198,6 +262,231 @@ async def portfolio():
         "totalValue": round(total_value, 2),
         "allocations": allocations,
     }
+
+
+# ─── Terminal / Screener Endpoints ───────────────────────────────────────────
+
+@app.get("/terminal/sectors")
+async def list_sectors():
+    """List available sectors for screening."""
+    return {
+        "sectors": [
+            {"id": "technology", "label": "Technology", "count": 30},
+            {"id": "healthcare", "label": "Healthcare", "count": 30},
+            {"id": "finance", "label": "Finance / Banking", "count": 20},
+            {"id": "energy", "label": "Energy / Oil & Gas", "count": 20},
+            {"id": "consumer", "label": "Consumer / Retail", "count": 20},
+            {"id": "etf", "label": "ETFs", "count": 40},
+            {"id": "dividend", "label": "Dividend Stocks", "count": 30},
+            {"id": "canadian", "label": "Canadian Dividend", "count": 20},
+        ]
+    }
+
+
+@app.get("/terminal/top-sector/{sector}")
+async def top_by_sector(sector: str, limit: int = Query(default=5, ge=1, le=20)):
+    """
+    Get top stocks by market cap in a sector.
+    Example: /terminal/top-sector/technology?limit=5
+    """
+    sector = sector.lower()
+    universe = SECTOR_MAP.get(sector)
+    if not universe:
+        raise HTTPException(status_code=404, detail=f"Unknown sector: {sector}. Available: {list(SECTOR_MAP.keys())}")
+
+    stocks = await _fetch_batch(universe[:limit * 2])
+
+    for s in stocks:
+        rs, rl = _compute_risk(s["beta"], s["high52"], s["low52"], s["price"], s["pe"])
+        s["riskScore"] = rs
+        s["riskLevel"] = rl
+
+    stocks.sort(key=lambda x: x.get("marketCap") or 0, reverse=True)
+    return {"sector": sector, "results": stocks[:limit]}
+
+
+@app.get("/terminal/dividends")
+async def top_dividends(
+    country: str = Query(default="US", description="US or CA"),
+    limit: int = Query(default=10, ge=1, le=20),
+):
+    """
+    Get highest dividend-yielding stocks.
+    Example: /terminal/dividends?country=US&limit=10
+    """
+    if country.upper() == "CA":
+        universe = CANADIAN_DIVIDEND
+    else:
+        universe = DIVIDEND_UNIVERSE
+
+    stocks = await _fetch_batch(universe[:limit * 2])
+    stocks = [s for s in stocks if s.get("dividendYield")]
+
+    for s in stocks:
+        rs, rl = _compute_risk(s["beta"], s["high52"], s["low52"], s["price"], s["pe"])
+        s["riskScore"] = rs
+        s["riskLevel"] = rl
+
+    stocks.sort(key=lambda x: x.get("dividendYield") or 0, reverse=True)
+    return {"country": country.upper(), "results": stocks[:limit]}
+
+
+@app.get("/terminal/low-risk")
+async def low_risk_returns(
+    min_return: float = Query(default=10.0, description="Minimum 1Y return %"),
+    max_risk: int = Query(default=45, description="Maximum risk score (0-100)"),
+    limit: int = Query(default=10, ge=1, le=20),
+):
+    """
+    Find low-risk stocks/ETFs with target annual return.
+    Example: /terminal/low-risk?min_return=10&max_risk=45&limit=10
+    """
+    universe = ETF_UNIVERSE + DIVIDEND_UNIVERSE
+    seen = set()
+    unique = []
+    for s in universe:
+        if s not in seen:
+            seen.add(s)
+            unique.append(s)
+
+    stocks = await _fetch_batch(unique[:30])
+
+    qualified = []
+    for s in stocks:
+        rs, rl = _compute_risk(s["beta"], s["high52"], s["low52"], s["price"], s["pe"])
+        s["riskScore"] = rs
+        s["riskLevel"] = rl
+
+        ret_1y = s.get("return1Y")
+        if rs <= max_risk and ret_1y is not None and ret_1y >= min_return:
+            qualified.append(s)
+
+    qualified.sort(key=lambda x: x.get("return1Y") or 0, reverse=True)
+    return {"minReturn": min_return, "maxRisk": max_risk, "results": qualified[:limit]}
+
+
+@app.get("/terminal/query")
+async def natural_query(q: str = Query(..., description="Natural language query")):
+    """
+    Process a natural-language-style query and route to the right screener.
+    Examples:
+      - "top 5 tech" → top 5 technology stocks
+      - "top 5 healthcare" → top 5 healthcare stocks
+      - "highest dividend US" → top dividend stocks US
+      - "highest dividend canadian" → top Canadian dividend stocks
+      - "low risk 10% return" → low risk with 10% return
+    """
+    q_lower = q.lower()
+
+    # Detect limit
+    limit = 5
+    for word in q_lower.split():
+        if word.isdigit():
+            limit = min(int(word), 20)
+            break
+
+    # Detect sector queries
+    for sector_key in ["technology", "tech", "healthcare", "health", "finance",
+                       "financial", "banking", "energy", "oil", "consumer", "retail", "etf"]:
+        if sector_key in q_lower:
+            return await top_by_sector(sector_key, limit)
+
+    # Detect dividend queries
+    if "dividend" in q_lower:
+        country = "CA" if "canad" in q_lower else "US"
+        return await top_dividends(country, limit)
+
+    # Detect low risk + return queries
+    if "low risk" in q_lower or "safe" in q_lower or "conservative" in q_lower:
+        import re
+        ret_match = re.search(r"(\d+)\s*%?\s*return", q_lower)
+        min_ret = float(ret_match.group(1)) if ret_match else 10.0
+        return await low_risk_returns(min_ret, 45, limit)
+
+    # Default: treat as sector search or return help
+    return {
+        "message": "I understand queries like:",
+        "examples": [
+            "top 5 tech",
+            "top 5 healthcare",
+            "top 10 dividend US",
+            "top 5 dividend canadian",
+            "low risk 10% return",
+            "top 5 energy",
+            "top 5 finance",
+        ]
+    }
+
+
+# ─── AI Advisor Endpoints ────────────────────────────────────────────────────
+
+@app.get("/advisor/{ticker}")
+async def ai_advisor(
+    ticker: str,
+    profile: str = Query(default="moderate", description="conservative, moderate, or aggressive"),
+):
+    """
+    AI-powered buy/sell/hold recommendation for a stock.
+    Analyzes technical + fundamental signals and matches to investor profile.
+    """
+    ticker = ticker.upper()
+    profile = profile.lower()
+    if profile not in ("conservative", "moderate", "aggressive"):
+        profile = "moderate"
+
+    # Fetch full data
+    data = await _fetch_stock_full(ticker)
+    if not data:
+        raise HTTPException(status_code=404, detail=f"Could not fetch data for {ticker}")
+
+    # Compute risk
+    rs, rl = _compute_risk(data["beta"], data["high52"], data["low52"], data["price"], data["pe"])
+    data["riskScore"] = rs
+    data["riskLevel"] = rl
+
+    # Generate recommendation
+    rec = generate_recommendation(data, profile)
+    rec["ticker"] = ticker
+    rec["name"] = data["name"]
+    rec["price"] = data["price"]
+    rec["change"] = data["change"]
+    rec["riskScore"] = rs
+    rec["riskLevel"] = rl
+
+    return rec
+
+
+@app.get("/advisor/batch")
+async def ai_advisor_batch(
+    tickers: str = Query(..., description="Comma-separated tickers"),
+    profile: str = Query(default="moderate"),
+):
+    """
+    Batch AI recommendations for multiple tickers.
+    Example: /advisor/batch?tickers=AAPL,MSFT,NVDA&profile=conservative
+    """
+    profile = profile.lower()
+    if profile not in ("conservative", "moderate", "aggressive"):
+        profile = "moderate"
+
+    ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()][:10]
+
+    stocks = await _fetch_batch(ticker_list)
+    results = []
+    for data in stocks:
+        rs, rl = _compute_risk(data["beta"], data["high52"], data["low52"], data["price"], data["pe"])
+        data["riskScore"] = rs
+        data["riskLevel"] = rl
+        rec = generate_recommendation(data, profile)
+        rec["ticker"] = data["ticker"]
+        rec["name"] = data["name"]
+        rec["price"] = data["price"]
+        rec["change"] = data["change"]
+        rec["riskScore"] = rs
+        rec["riskLevel"] = rl
+        results.append(rec)
+
+    return {"profile": profile, "results": results}
 
 
 @app.get("/health")
