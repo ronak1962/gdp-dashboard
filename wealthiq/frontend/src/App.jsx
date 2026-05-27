@@ -4,9 +4,10 @@ import Terminal from './components/Terminal'
 import AIAdvisor from './components/AIAdvisor'
 import Discover from './components/Discover'
 import StockAnalysis from './components/StockAnalysis'
+import Dashboard from './components/Dashboard'
 
 export default function App() {
-  const [tab, setTab] = useState('terminal')
+  const [tab, setTab] = useState('dashboard')
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -21,6 +22,14 @@ export default function App() {
 
       {/* Tabs */}
       <div className="flex gap-2 mb-4 flex-wrap">
+        <button
+          onClick={() => setTab('dashboard')}
+          className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
+            tab === 'dashboard' ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          🏠 Dashboard
+        </button>
         <button
           onClick={() => setTab('terminal')}
           className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
@@ -63,6 +72,7 @@ export default function App() {
         </button>
       </div>
 
+      {tab === 'dashboard' && <Dashboard />}
       {tab === 'terminal' && <Terminal />}
       {tab === 'analysis' && <StockAnalysis />}
       {tab === 'advisor' && <AIAdvisor />}

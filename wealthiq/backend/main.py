@@ -579,6 +579,87 @@ async def run_screener(
         raise HTTPException(status_code=404, detail="Screener not found")
 
 
+# ─── Live Market Data Endpoints ──────────────────────────────────────────────
+
+@app.get("/market/overview")
+async def market_overview():
+    """Live market overview — major indices, top movers, market status."""
+    indices = ["SPY", "QQQ", "DIA", "IWM", "VTI"]
+    movers = ["NVDA", "AAPL", "MSFT", "TSLA", "AMZN", "META", "GOOGL", "JPM"]
+
+    index_data = []
+    for sym in indices:
+        try:
+            q = await _get("/quote", {"symbol": sym})
+            names = {"SPY": "S&P 500", "QQQ": "NASDAQ 100", "DIA": "Dow Jones", "IWM": "Russell 2000", "VTI": "Total Market"}
+            index_data.append({
+                "ticker": sym,
+                "name": names.get(sym, sym),
+                "price": q.get("c", 0),
+                "change": q.get("dp", 0),
+                "high": q.get("h", 0),
+                "low": q.get("l", 0),
+            })
+        except Exception:
+            continue
+
+    mover_data = []
+    for sym in movers:
+        try:
+            q = await _get("/quote", {"symbol": sym})
+            mover_data.append({
+                "ticker": sym,
+                "price": q.get("c", 0),
+                "change": q.get("dp", 0),
+            })
+        except Exception:
+            continue
+
+    return {"indices": index_data, "movers": mover_data}
+
+
+@app.get("/market/news")
+async def market_news(limit: int = Query(default=15, ge=1, le=50)):
+    """Latest market news from Finnhub."""
+    try:
+        news = await _get("/news", {"category": "general"})
+        if not isinstance(news, list):
+            return []
+        return [{
+            "headline": n.get("headline", ""),
+            "summary": n.get("summary", ""),
+            "source": n.get("source", ""),
+            "url": n.get("url", ""),
+            "image": n.get("image", ""),
+            "datetime": n.get("datetime", 0),
+        } for n in news[:limit]]
+    except Exception:
+        return []
+
+
+@app.get("/market/news/{ticker}")
+async def stock_news(ticker: str, limit: int = Query(default=10, ge=1, le=30)):
+    """Company-specific news."""
+    ticker = ticker.upper()
+    try:
+        from datetime import datetime, timedelta
+        today = datetime.now().strftime("%Y-%m-%d")
+        week_ago = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
+        news = await _get("/company-news", {"symbol": ticker, "from": week_ago, "to": today})
+        if not isinstance(news, list):
+            return []
+        return [{
+            "headline": n.get("headline", ""),
+            "summary": n.get("summary", ""),
+            "source": n.get("source", ""),
+            "url": n.get("url", ""),
+            "image": n.get("image", ""),
+            "datetime": n.get("datetime", 0),
+        } for n in news[:limit]]
+    except Exception:
+        return []
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok", "api_key_set": bool(FINNHUB_KEY)}
