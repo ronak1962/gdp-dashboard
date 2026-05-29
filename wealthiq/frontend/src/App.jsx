@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import PortfolioPanel from './components/PortfolioPanel'
 import Terminal from './components/Terminal'
 import AIAdvisor from './components/AIAdvisor'
 import Discover from './components/Discover'
@@ -14,7 +13,6 @@ const TABS = [
   { id: 'analysis', label: '📊 Stock Analysis', activeClass: 'bg-orange-500 text-white' },
   { id: 'advisor', label: '🤖 AI Advisor', activeClass: 'bg-gradient-to-r from-navy to-blue-600 text-white' },
   { id: 'discover', label: '🔍 Discover', activeClass: 'bg-green-600 text-white' },
-  { id: 'portfolio', label: '💼 Portfolio', activeClass: 'bg-navy text-white' },
 ]
 
 export default function App() {
@@ -52,7 +50,6 @@ export default function App() {
       {tab === 'analysis' && <StockAnalysis />}
       {tab === 'advisor' && <AIAdvisor />}
       {tab === 'discover' && <Discover />}
-      {tab === 'portfolio' && <PortfolioPanel />}
     </div>
   )
 }

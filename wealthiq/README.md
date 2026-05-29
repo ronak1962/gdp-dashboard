@@ -19,7 +19,6 @@ Patel Analysis helps advisors answer client questions like:
 | **Stock Analysis** | TradingView-style deep analysis (stats, technicals, performance) |
 | **AI Advisor** | Buy/sell/hold recommendations matched to client risk profile |
 | **Discover** | Pre-built portfolio templates + screeners for diversification |
-| **Portfolio Tracker** | 60/40 allocation with drift detection and rebalancing signals |
 
 ## Who It's For
 
@@ -80,4 +79,3 @@ Then open `http://<your-mac-ip>:3000` on your phone (same WiFi).
 | `GET /terminal/query?q=top 5 tech` | Natural language screener |
 | `GET /templates` | Portfolio templates for diversification |
 | `GET /screeners` | Available screener categories |
-| `GET /portfolio` | 60/40 allocation with rebalancing signals |
