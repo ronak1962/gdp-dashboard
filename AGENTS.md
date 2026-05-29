@@ -35,6 +35,6 @@ npm run dev
 
 **Key notes**:
 - The Finnhub API key (`FINNHUB_API_KEY` env var) may be invalid; backend auto-falls back to mock data.
-- Backend health: `curl http://localhost:8000/health` returns `{"status":"ok","mode":"mock"|"live"}`
+- Backend health: `curl http://localhost:8000/health` returns `{"status":"ok","api_key_set":true|false}`
 - No database or external services needed — all data comes from Finnhub API or built-in mock data.
 - Python 3.11+ and Node.js 18+ required.
