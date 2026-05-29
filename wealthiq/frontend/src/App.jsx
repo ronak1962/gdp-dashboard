@@ -1,11 +1,19 @@
 import { useState } from 'react'
-import PortfolioPanel from './components/PortfolioPanel'
 import Terminal from './components/Terminal'
 import AIAdvisor from './components/AIAdvisor'
 import Discover from './components/Discover'
 import StockAnalysis from './components/StockAnalysis'
 import Dashboard from './components/Dashboard'
 import Chart from './components/Chart'
+
+const TABS = [
+  { id: 'dashboard', label: '🏠 Dashboard', activeClass: 'bg-orange-500 text-white' },
+  { id: 'terminal', label: '⌨ Terminal', activeClass: 'bg-gray-900 text-cyan-400 ring-1 ring-cyan-500' },
+  { id: 'charts', label: '📈 Charts', activeClass: 'bg-blue-600 text-white' },
+  { id: 'analysis', label: '📊 Stock Analysis', activeClass: 'bg-orange-500 text-white' },
+  { id: 'advisor', label: '🤖 AI Advisor', activeClass: 'bg-gradient-to-r from-navy to-blue-600 text-white' },
+  { id: 'discover', label: '🔍 Discover', activeClass: 'bg-green-600 text-white' },
+]
 
 export default function App() {
   const [tab, setTab] = useState('dashboard')
@@ -23,62 +31,17 @@ export default function App() {
 
       {/* Tabs */}
       <div className="flex gap-2 mb-4 flex-wrap">
-        <button
-          onClick={() => setTab('dashboard')}
-          className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
-            tab === 'dashboard' ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          🏠 Dashboard
-        </button>
-        <button
-          onClick={() => setTab('terminal')}
-          className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
-            tab === 'terminal' ? 'bg-gray-900 text-cyan-400 ring-1 ring-cyan-500' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          ⌨ Terminal
-        </button>
-        <button
-          onClick={() => setTab('charts')}
-          className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
-            tab === 'charts' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          📈 Charts
-        </button>
-        <button
-          onClick={() => setTab('analysis')}
-          className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
-            tab === 'analysis' ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          📊 Stock Analysis
-        </button>
-        <button
-          onClick={() => setTab('advisor')}
-          className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
-            tab === 'advisor' ? 'bg-gradient-to-r from-navy to-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          🤖 AI Advisor
-        </button>
-        <button
-          onClick={() => setTab('discover')}
-          className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
-            tab === 'discover' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          🔍 Discover
-        </button>
-        <button
-          onClick={() => setTab('portfolio')}
-          className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
-            tab === 'portfolio' ? 'bg-navy text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          💼 Portfolio
-        </button>
+        {TABS.map(({ id, label, activeClass }) => (
+          <button
+            key={id}
+            onClick={() => setTab(id)}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
+              tab === id ? activeClass : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {tab === 'dashboard' && <Dashboard />}
@@ -87,7 +50,6 @@ export default function App() {
       {tab === 'analysis' && <StockAnalysis />}
       {tab === 'advisor' && <AIAdvisor />}
       {tab === 'discover' && <Discover />}
-      {tab === 'portfolio' && <PortfolioPanel />}
     </div>
   )
 }

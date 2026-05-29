@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
-
-const API = 'http://localhost:8000'
-const CHIPS = ['AAPL', 'MSFT', 'NVDA', 'TSLA', 'AMZN', 'GOOGL', 'META', 'JPM']
+import { API_BASE_URL } from '../config/api'
+import { DEFAULT_TICKERS } from '../constants/tickers'
+import { actionDotClass, actionPillClass, changeArrow, changePrefix, changeTextClass, riskTextClass } from '../utils/marketDisplay'
 
 function PerformanceBar({ label, value }) {
   const isPositive = value >= 0
@@ -82,9 +82,9 @@ export default function StockAnalysis() {
 
     try {
       const [analysisRes, advisorRes, peersRes] = await Promise.all([
-        fetch(`${API}/analyze/${t}`),
-        fetch(`${API}/advisor/${t}?profile=moderate`),
-        fetch(`${API}/peers/${t}`),
+        fetch(`${API_BASE_URL}/analyze/${t}`),
+        fetch(`${API_BASE_URL}/advisor/${t}?profile=moderate`),
+        fetch(`${API_BASE_URL}/peers/${t}`),
       ])
       if (!analysisRes.ok) throw new Error('Failed to fetch')
       setData(await analysisRes.json())
@@ -119,7 +119,7 @@ export default function StockAnalysis() {
           </button>
         </div>
         <div className="flex flex-wrap gap-1.5">
-          {CHIPS.map((c) => (
+          {DEFAULT_TICKERS.map((c) => (
             <button
               key={c}
               onClick={() => { setTicker(c); search(c) }}
@@ -152,8 +152,8 @@ export default function StockAnalysis() {
             </div>
             <div className="text-right">
               <p className="text-white text-2xl font-bold font-mono">${data.price?.toFixed(2)}</p>
-              <p className={`text-sm font-mono ${data.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {data.change >= 0 ? '▲' : '▼'} {Math.abs(data.change)?.toFixed(2)}%
+              <p className={`text-sm font-mono ${changeTextClass(data.change)}`}>
+                {changeArrow(data.change)} {Math.abs(data.change)?.toFixed(2)}%
               </p>
             </div>
           </div>
@@ -176,7 +176,7 @@ export default function StockAnalysis() {
               <StatRow label="Beta (1Y)" value={data.beta?.toFixed(2) || '—'} />
               <StatRow label="52-Week High" value={`$${data.high52?.toFixed(2)}`} />
               <StatRow label="52-Week Low" value={`$${data.low52?.toFixed(2)}`} />
-              <StatRow label="Risk Score" value={`${data.riskScore}/100`} highlight={data.riskScore < 35 ? 'text-green-400' : data.riskScore <= 65 ? 'text-yellow-400' : 'text-red-400'} />
+              <StatRow label="Risk Score" value={`${data.riskScore}/100`} highlight={riskTextClass(data.riskLevel)} />
             </div>
 
             {/* Technicals */}
@@ -193,11 +193,7 @@ export default function StockAnalysis() {
                 <div className="mt-4 pt-3 border-t border-gray-800">
                   <div className="flex items-center justify-between">
                     <span className="text-gray-400 text-xs">AI Rating</span>
-                    <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded ${
-                      rec.action === 'BUY' ? 'text-green-400 bg-green-400/10' :
-                      rec.action === 'SELL' ? 'text-red-400 bg-red-400/10' :
-                      'text-yellow-400 bg-yellow-400/10'
-                    }`}>
+                    <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded ${actionPillClass(rec.action)}`}>
                       {rec.action} • {rec.confidence}%
                     </span>
                   </div>
@@ -213,7 +209,7 @@ export default function StockAnalysis() {
               <div className="space-y-2">
                 {rec.signals.map((s, i) => (
                   <div key={i} className="flex items-start gap-2">
-                    <span className={`w-2 h-2 rounded-full mt-1 shrink-0 ${s.action === 'BUY' ? 'bg-green-400' : s.action === 'SELL' ? 'bg-red-400' : 'bg-yellow-400'}`}></span>
+                    <span className={`w-2 h-2 rounded-full mt-1 shrink-0 ${actionDotClass(s.action)}`}></span>
                     <span className="text-gray-300 text-xs">{s.reason}</span>
                   </div>
                 ))}
@@ -255,8 +251,8 @@ export default function StockAnalysis() {
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-orange-400 font-mono text-xs font-bold">{p.ticker}</span>
-                      <span className={`text-[10px] font-mono ${p.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {p.change >= 0 ? '+' : ''}{p.change?.toFixed(1)}%
+                      <span className={`text-[10px] font-mono ${changeTextClass(p.change)}`}>
+                        {changePrefix(p.change)}{p.change?.toFixed(1)}%
                       </span>
                     </div>
                     <p className="text-white font-mono text-xs">${p.price?.toFixed(2)}</p>

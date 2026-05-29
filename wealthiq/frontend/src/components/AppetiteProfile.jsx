@@ -1,15 +1,11 @@
-const profiles = [
-  { name: 'Conservative', range: [0, 34], desc: 'Low-volatility, dividend-focused', icon: '🛡️' },
-  { name: 'Moderate', range: [35, 65], desc: 'Balanced growth and stability', icon: '⚖️' },
-  { name: 'Aggressive', range: [66, 100], desc: 'High-growth, momentum-driven', icon: '🚀' },
-]
+import { INVESTOR_PROFILES } from '../constants/profiles'
 
 export default function AppetiteProfile({ riskScore }) {
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
       <h3 className="font-semibold text-navy text-sm mb-4">Analyst Appetite Profiles</h3>
       <div className="grid md:grid-cols-3 gap-3">
-        {profiles.map((p) => {
+        {INVESTOR_PROFILES.map((p) => {
           const match = riskScore >= p.range[0] && riskScore <= p.range[1]
           return (
             <div
@@ -27,7 +23,7 @@ export default function AppetiteProfile({ riskScore }) {
                   </span>
                 )}
               </div>
-              <p className="text-xs text-gray-500">{p.desc}</p>
+              <p className="text-xs text-gray-500">{p.appetiteDesc}</p>
             </div>
           )
         })}

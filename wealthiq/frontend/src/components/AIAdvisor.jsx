@@ -1,27 +1,18 @@
 import { useState } from 'react'
-
-const API = 'http://localhost:8000'
-
-const PROFILES = [
-  { id: 'conservative', label: 'Conservative', icon: '🛡️', desc: 'Low risk, stable returns' },
-  { id: 'moderate', label: 'Moderate', icon: '⚖️', desc: 'Balanced growth & safety' },
-  { id: 'aggressive', label: 'Aggressive', icon: '🚀', desc: 'High growth, higher risk' },
-]
+import { API_BASE_URL } from '../config/api'
+import { INVESTOR_PROFILES } from '../constants/profiles'
+import { ADVISOR_TICKERS } from '../constants/tickers'
+import { actionEmoji, actionPillClass, signalIcon, signalTextClass } from '../utils/marketDisplay'
 
 function ActionBadge({ action, size = 'md' }) {
-  const colors = {
-    BUY: 'bg-emerald-500 text-white',
-    SELL: 'bg-red-500 text-white',
-    HOLD: 'bg-amber-500 text-white',
-  }
   const sizes = {
     sm: 'text-xs px-2 py-0.5',
     md: 'text-sm px-3 py-1',
     lg: 'text-lg px-4 py-2 font-bold',
   }
   return (
-    <span className={`${colors[action] || 'bg-gray-500 text-white'} ${sizes[size]} rounded-full font-semibold`}>
-      {action === 'BUY' ? '🟢' : action === 'SELL' ? '🔴' : '🟡'} {action}
+    <span className={`${actionPillClass(action, 'light')} ${sizes[size]} rounded-full font-semibold`}>
+      {actionEmoji(action)} {action}
     </span>
   )
 }
@@ -39,11 +30,9 @@ function ConfidenceMeter({ confidence }) {
 }
 
 function SignalRow({ signal }) {
-  const icon = signal.action === 'BUY' ? '↑' : signal.action === 'SELL' ? '↓' : '→'
-  const color = signal.action === 'BUY' ? 'text-emerald-600' : signal.action === 'SELL' ? 'text-red-600' : 'text-amber-600'
   return (
     <div className="flex items-start gap-2 py-1.5 border-b border-gray-50 last:border-0">
-      <span className={`${color} font-bold text-sm w-5`}>{icon}</span>
+      <span className={`${signalTextClass(signal.action)} font-bold text-sm w-5`}>{signalIcon(signal.action)}</span>
       <span className="text-xs text-gray-600 flex-1">{signal.reason}</span>
       <span className="text-xs text-gray-400">{signal.strength}%</span>
     </div>
@@ -69,8 +58,8 @@ export default function AIAdvisor() {
 
     try {
       const [advisorRes, algoRes] = await Promise.all([
-        fetch(`${API}/advisor/${sym}?profile=${profile}`),
-        fetch(`${API}/algo/${sym}`),
+        fetch(`${API_BASE_URL}/advisor/${sym}?profile=${profile}`),
+        fetch(`${API_BASE_URL}/algo/${sym}`),
       ])
       if (!advisorRes.ok) throw new Error('Failed to get recommendation')
       setRec(await advisorRes.json())
@@ -97,7 +86,7 @@ export default function AIAdvisor() {
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
         <p className="text-xs text-gray-500 uppercase tracking-wide mb-3">Your Investor Profile</p>
         <div className="grid grid-cols-3 gap-2">
-          {PROFILES.map((p) => (
+          {INVESTOR_PROFILES.map((p) => (
             <button
               key={p.id}
               onClick={() => setProfile(p.id)}
@@ -135,7 +124,7 @@ export default function AIAdvisor() {
 
       {/* Quick picks */}
       <div className="flex flex-wrap gap-2">
-        {['AAPL', 'MSFT', 'NVDA', 'TSLA', 'AMZN', 'JPM', 'JNJ', 'VTI'].map((t) => (
+        {ADVISOR_TICKERS.map((t) => (
           <button
             key={t}
             onClick={() => { setTicker(t); getAdvice(t) }}
