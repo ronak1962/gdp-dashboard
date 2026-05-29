@@ -1,3 +1,5 @@
+import { changePrefix, changeTextClass, riskPillClass } from '../utils/marketDisplay'
+
 export default function PeerTable({ peers, mainPrice }) {
   const maxPrice = Math.max(...peers.map((p) => p.price), mainPrice || 0)
 
@@ -19,14 +21,13 @@ export default function PeerTable({ peers, mainPrice }) {
           <tbody>
             {peers.map((p) => {
               const barW = maxPrice > 0 ? (p.price / maxPrice) * 100 : 0
-              const pillColor = p.riskLevel === 'Low' ? 'bg-teal' : p.riskLevel === 'Medium' ? 'bg-amber' : 'bg-red'
               return (
                 <tr key={p.ticker} className="border-b border-gray-50 hover:bg-gray-50">
                   <td className="py-2 px-2 font-bold text-navy">{p.ticker}</td>
                   <td className="py-2 px-2 text-gray-600 truncate max-w-[120px]">{p.name}</td>
                   <td className="py-2 px-2 text-right font-medium">${p.price?.toFixed(2)}</td>
-                  <td className={`py-2 px-2 text-right font-medium ${p.change >= 0 ? 'text-teal' : 'text-red'}`}>
-                    {p.change >= 0 ? '+' : ''}{p.change?.toFixed(2)}%
+                  <td className={`py-2 px-2 text-right font-medium ${changeTextClass(p.change, 'light')}`}>
+                    {changePrefix(p.change)}{p.change?.toFixed(2)}%
                   </td>
                   <td className="py-2 px-2">
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -34,7 +35,7 @@ export default function PeerTable({ peers, mainPrice }) {
                     </div>
                   </td>
                   <td className="py-2 px-2 text-center">
-                    <span className={`${pillColor} text-white text-[10px] font-bold px-2 py-0.5 rounded-full`}>
+                    <span className={`${riskPillClass(p.riskLevel, 'light')} text-white text-[10px] font-bold px-2 py-0.5 rounded-full`}>
                       {p.riskLevel}
                     </span>
                   </td>

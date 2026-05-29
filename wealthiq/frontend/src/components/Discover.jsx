@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-
-const API = 'http://localhost:8000'
+import { API_BASE_URL } from '../config/api'
+import { changePrefix, changeTextClass, riskPillClass, riskTextClass } from '../utils/marketDisplay'
 
 function TemplateCard({ template, onSelect }) {
-  const riskColor = template.risk === 'Low' ? 'text-green-400' : template.risk === 'Medium' ? 'text-yellow-400' : 'text-red-400'
+  const riskColor = riskTextClass(template.risk)
 
   return (
     <div
@@ -48,7 +48,7 @@ function TemplateDetail({ template, onBack }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch(`${API}/templates/${template.id}`)
+    fetch(`${API_BASE_URL}/templates/${template.id}`)
       .then(r => r.json())
       .then(setData)
       .catch(() => {})
@@ -84,7 +84,7 @@ function TemplateDetail({ template, onBack }) {
             <div className="text-gray-500 text-[10px]">Sectors</div>
           </div>
           <div className="text-center">
-            <div className={`font-mono text-sm font-bold ${template.risk === 'Low' ? 'text-green-400' : template.risk === 'Medium' ? 'text-yellow-400' : 'text-red-400'}`}>{template.risk}</div>
+            <div className={`font-mono text-sm font-bold ${riskTextClass(template.risk)}`}>{template.risk}</div>
             <div className="text-gray-500 text-[10px]">Risk</div>
           </div>
         </div>
@@ -129,11 +129,11 @@ function TemplateDetail({ template, onBack }) {
                   <td className="py-2 px-2 text-orange-400 font-mono font-bold">{h.ticker}</td>
                   <td className="py-2 px-2 text-gray-300 truncate max-w-[100px]">{h.name}</td>
                   <td className="py-2 px-2 text-right text-white font-mono">${h.price?.toFixed(2)}</td>
-                  <td className={`py-2 px-2 text-right font-mono ${h.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {h.change >= 0 ? '+' : ''}{h.change?.toFixed(2)}%
+                  <td className={`py-2 px-2 text-right font-mono ${changeTextClass(h.change)}`}>
+                    {changePrefix(h.change)}{h.change?.toFixed(2)}%
                   </td>
                   <td className="py-2 px-2 text-center">
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${h.riskLevel === 'Low' ? 'text-green-400 bg-green-400/10' : h.riskLevel === 'Medium' ? 'text-yellow-400 bg-yellow-400/10' : 'text-red-400 bg-red-400/10'}`}>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${riskPillClass(h.riskLevel)}`}>
                       {h.riskLevel}
                     </span>
                   </td>
@@ -171,8 +171,8 @@ export default function Discover() {
 
   useEffect(() => {
     Promise.all([
-      fetch(`${API}/templates`).then(r => r.json()),
-      fetch(`${API}/screeners`).then(r => r.json()),
+      fetch(`${API_BASE_URL}/templates`).then(r => r.json()),
+      fetch(`${API_BASE_URL}/screeners`).then(r => r.json()),
     ]).then(([t, s]) => {
       setTemplates(t)
       setScreeners(s)

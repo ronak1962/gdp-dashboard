@@ -1,10 +1,17 @@
-import { useState, useRef, useEffect } from 'react'
-
-const API = 'http://localhost:8000'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { API_BASE_URL } from '../config/api'
+import {
+  actionBorderClass,
+  actionDotClass,
+  actionPillClass,
+  changeArrow,
+  changePrefix,
+  changeTextClass,
+  riskPillClass,
+} from '../utils/marketDisplay'
 
 function RiskPill({ level }) {
-  const color = level === 'Low' ? 'text-green-400 bg-green-400/10' : level === 'Medium' ? 'text-yellow-400 bg-yellow-400/10' : 'text-red-400 bg-red-400/10'
-  return <span className={`${color} text-[10px] font-bold px-1.5 py-0.5 rounded`}>{level}</span>
+  return <span className={`${riskPillClass(level)} text-[10px] font-bold px-1.5 py-0.5 rounded`}>{level}</span>
 }
 
 function MarketTicker({ data }) {
@@ -15,8 +22,8 @@ function MarketTicker({ data }) {
         <div key={r.ticker} className="flex items-center gap-2 shrink-0">
           <span className="text-orange-400 font-mono text-xs font-bold">{r.ticker}</span>
           <span className="text-white font-mono text-xs">{r.price?.toFixed(2)}</span>
-          <span className={`font-mono text-[10px] ${r.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-            {r.change >= 0 ? '▲' : '▼'}{Math.abs(r.change)?.toFixed(2)}%
+          <span className={`font-mono text-[10px] ${changeTextClass(r.change)}`}>
+            {changeArrow(r.change)}{Math.abs(r.change)?.toFixed(2)}%
           </span>
         </div>
       ))}
@@ -33,8 +40,8 @@ function StockRow({ stock, onSelect, isSelected }) {
       <td className="py-2 px-3 font-mono text-orange-400 font-bold text-xs">{stock.ticker}</td>
       <td className="py-2 px-3 text-gray-300 text-xs truncate max-w-[120px]">{stock.name}</td>
       <td className="py-2 px-3 text-right font-mono text-white text-xs">{stock.price?.toFixed(2)}</td>
-      <td className={`py-2 px-3 text-right font-mono text-xs ${stock.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-        {stock.change >= 0 ? '+' : ''}{stock.change?.toFixed(2)}%
+      <td className={`py-2 px-3 text-right font-mono text-xs ${changeTextClass(stock.change)}`}>
+        {changePrefix(stock.change)}{stock.change?.toFixed(2)}%
       </td>
       <td className="py-2 px-3 text-right font-mono text-gray-400 text-xs">
         {stock.marketCap ? `${(stock.marketCap / 1000).toFixed(0)}B` : '—'}
@@ -58,8 +65,8 @@ function StockDetail({ ticker }) {
   useEffect(() => {
     setLoading(true)
     Promise.all([
-      fetch(`${API}/analyze/${ticker}`).then(r => r.json()),
-      fetch(`${API}/advisor/${ticker}?profile=moderate`).then(r => r.json()),
+      fetch(`${API_BASE_URL}/analyze/${ticker}`).then(r => r.json()),
+      fetch(`${API_BASE_URL}/advisor/${ticker}?profile=moderate`).then(r => r.json()),
     ]).then(([analysis, advice]) => {
       setData(analysis)
       setRec(advice)
@@ -69,9 +76,7 @@ function StockDetail({ ticker }) {
   if (loading) return <div className="text-gray-500 text-xs p-4 text-center">Loading {ticker}...</div>
   if (!data) return null
 
-  const actionColor = rec?.action === 'BUY' ? 'text-green-400 bg-green-400/10 border-green-400/30'
-    : rec?.action === 'SELL' ? 'text-red-400 bg-red-400/10 border-red-400/30'
-    : 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30'
+  const actionColor = `${actionPillClass(rec?.action)} ${actionBorderClass(rec?.action)}`
 
   return (
     <div className="space-y-3">
@@ -93,8 +98,8 @@ function StockDetail({ ticker }) {
         <div className="bg-gray-800/50 rounded p-2">
           <div className="text-[10px] text-gray-500 uppercase">Price</div>
           <div className="text-white font-mono text-sm font-bold">${data.price?.toFixed(2)}</div>
-          <div className={`text-[10px] font-mono ${data.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-            {data.change >= 0 ? '▲' : '▼'} {Math.abs(data.change)?.toFixed(2)}%
+          <div className={`text-[10px] font-mono ${changeTextClass(data.change)}`}>
+            {changeArrow(data.change)} {Math.abs(data.change)?.toFixed(2)}%
           </div>
         </div>
         <div className="bg-gray-800/50 rounded p-2">
@@ -147,7 +152,7 @@ function StockDetail({ ticker }) {
           <div className="space-y-1">
             {rec.signals.slice(0, 4).map((s, i) => (
               <div key={i} className="flex items-center gap-2 text-[10px]">
-                <span className={`w-1.5 h-1.5 rounded-full ${s.action === 'BUY' ? 'bg-green-400' : s.action === 'SELL' ? 'bg-red-400' : 'bg-yellow-400'}`}></span>
+                <span className={`w-1.5 h-1.5 rounded-full ${actionDotClass(s.action)}`}></span>
                 <span className="text-gray-400 flex-1">{s.reason}</span>
               </div>
             ))}
@@ -188,20 +193,15 @@ export default function Terminal() {
   const [tickerData, setTickerData] = useState(null)
   const inputRef = useRef(null)
 
-  useEffect(() => {
-    inputRef.current?.focus()
-    runQuery('top 5 tech')
-  }, [])
-
-  const runQuery = async (q) => {
-    const text = (q || query).trim()
+  const runQuery = useCallback(async (q) => {
+    const text = (q || '').trim()
     if (!text) return
     setQuery('')
     setLoading(true)
     setSelectedStock(null)
 
     try {
-      const res = await fetch(`${API}/terminal/query?q=${encodeURIComponent(text)}`)
+      const res = await fetch(`${API_BASE_URL}/terminal/query?q=${encodeURIComponent(text)}`)
       if (!res.ok) throw new Error(`Error ${res.status}`)
       const data = await res.json()
       setScreenData(data)
@@ -211,7 +211,12 @@ export default function Terminal() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    inputRef.current?.focus()
+    runQuery('top 5 tech')
+  }, [runQuery])
 
   const sectors = ['Tech', 'Healthcare', 'Finance', 'Energy', 'Industrial', 'Consumer']
   const regions = ['US', 'Canada']
@@ -252,10 +257,10 @@ export default function Terminal() {
                 placeholder="SEARCH (e.g. top 5 tech, dividend US, low risk 10% return)"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && runQuery()}
+                onKeyDown={(e) => e.key === 'Enter' && runQuery(query)}
               />
               <button
-                onClick={() => runQuery()}
+                onClick={() => runQuery(query)}
                 disabled={loading}
                 className="text-[10px] text-orange-400 border border-orange-400/30 px-2 py-0.5 rounded font-mono hover:bg-orange-400/10 transition disabled:opacity-40"
               >

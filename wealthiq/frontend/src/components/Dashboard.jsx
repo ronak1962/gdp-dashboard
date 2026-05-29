@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react'
-
-const API = 'http://localhost:8000'
+import { API_BASE_URL } from '../config/api'
+import { changeArrow, changeTextClass, isPositiveChange } from '../utils/marketDisplay'
 
 function IndexCard({ data }) {
-  const isUp = data.change >= 0
+  const isUp = isPositiveChange(data.change)
   return (
     <div className={`rounded-lg p-3 border ${isUp ? 'bg-green-900/20 border-green-800/50' : 'bg-red-900/20 border-red-800/50'}`}>
       <div className="flex items-center justify-between mb-1">
         <span className="text-gray-400 text-[10px] uppercase">{data.name}</span>
         <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${isUp ? 'text-green-400 bg-green-400/10' : 'text-red-400 bg-red-400/10'}`}>
-          {isUp ? '▲' : '▼'} {Math.abs(data.change)?.toFixed(2)}%
+          {changeArrow(data.change)} {Math.abs(data.change)?.toFixed(2)}%
         </span>
       </div>
       <p className={`font-mono text-lg font-bold ${isUp ? 'text-green-300' : 'text-red-300'}`}>${data.price?.toFixed(2)}</p>
@@ -22,13 +22,13 @@ function IndexCard({ data }) {
 }
 
 function MoverRow({ data }) {
-  const isUp = data.change >= 0
+  const isUp = isPositiveChange(data.change)
   return (
     <div className={`flex items-center justify-between py-2 px-2 rounded mb-1 ${isUp ? 'bg-green-900/10' : 'bg-red-900/10'}`}>
       <span className="text-orange-400 font-mono text-xs font-bold w-12">{data.ticker}</span>
       <span className={`font-mono text-xs font-bold ${isUp ? 'text-green-300' : 'text-red-300'}`}>${data.price?.toFixed(2)}</span>
-      <span className={`font-mono text-xs font-bold ${isUp ? 'text-green-400' : 'text-red-400'}`}>
-        {isUp ? '▲' : '▼'} {Math.abs(data.change)?.toFixed(2)}%
+      <span className={`font-mono text-xs font-bold ${changeTextClass(data.change)}`}>
+        {changeArrow(data.change)} {Math.abs(data.change)?.toFixed(2)}%
       </span>
     </div>
   )
@@ -69,8 +69,8 @@ export default function Dashboard() {
   const fetchData = async () => {
     try {
       const [mktRes, newsRes] = await Promise.all([
-        fetch(`${API}/market/overview`),
-        fetch(`${API}/market/news?limit=12`),
+        fetch(`${API_BASE_URL}/market/overview`),
+        fetch(`${API_BASE_URL}/market/news?limit=12`),
       ])
       if (mktRes.ok) setMarket(await mktRes.json())
       if (newsRes.ok) setNews(await newsRes.json())

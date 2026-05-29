@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-
-const CHIPS = ['AAPL', 'MSFT', 'NVDA', 'TSLA', 'AMZN', 'GOOGL', 'META', 'JPM']
+import { DEFAULT_TICKERS } from '../constants/tickers'
 
 function TradingViewChart({ symbol, interval }) {
   const containerRef = useRef(null)
@@ -107,7 +106,7 @@ export default function Chart() {
 
         {/* Quick picks */}
         <div className="flex gap-1">
-          {CHIPS.map((c) => (
+          {DEFAULT_TICKERS.map((c) => (
             <button
               key={c}
               onClick={() => handleSearch(c)}

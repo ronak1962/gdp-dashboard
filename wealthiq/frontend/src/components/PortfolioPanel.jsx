@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
-
-const API = 'http://localhost:8000'
+import { API_BASE_URL } from '../config/api'
+import { actionBgClass } from '../utils/marketDisplay'
 
 export default function PortfolioPanel() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch(`${API}/portfolio`)
+    fetch(`${API_BASE_URL}/portfolio`)
       .then((r) => r.json())
       .then(setData)
       .catch(() => {})
@@ -35,7 +35,7 @@ export default function PortfolioPanel() {
 
         <div className="space-y-4">
           {data.allocations.map((a) => {
-            const actionColor = a.action === 'BUY' ? 'bg-teal' : a.action === 'SELL' ? 'bg-red' : 'bg-gray-400'
+            const actionColor = actionBgClass(a.action)
             const driftColor = a.drift > 0 ? 'text-red' : a.drift < 0 ? 'text-teal' : 'text-gray-500'
             return (
               <div key={a.ticker} className="border border-gray-100 rounded-lg p-4">
