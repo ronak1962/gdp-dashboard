@@ -221,6 +221,22 @@ async def peers(ticker: str):
     return results
 
 
+@app.get("/quote/{ticker}")
+async def quote(ticker: str):
+    """Fast quote endpoint for UI elements that only need price direction."""
+    ticker = ticker.upper()
+    data = await _get("/quote", {"symbol": ticker})
+    price = data.get("c", 0)
+    if not price:
+        raise HTTPException(status_code=404, detail=f"No quote data for {ticker}")
+
+    return {
+        "ticker": ticker,
+        "price": price,
+        "change": data.get("dp", 0),
+    }
+
+
 @app.get("/portfolio")
 async def portfolio():
     targets = {"VTI": 0.40, "VXUS": 0.20, "BND": 0.40}

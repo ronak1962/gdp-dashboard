@@ -75,6 +75,7 @@ Then open `http://<your-mac-ip>:3000` on your phone (same WiFi).
 | Endpoint | Description |
 |----------|-------------|
 | `GET /analyze/{ticker}` | Full stock analysis with risk score |
+| `GET /quote/{ticker}` | Lightweight price/change quote for chart direction |
 | `GET /advisor/{ticker}?profile=moderate` | AI buy/sell/hold recommendation |
 | `GET /terminal/query?q=top 5 tech` | Natural language screener |
 | `GET /templates` | Portfolio templates for diversification |
