@@ -1,6 +1,6 @@
 import { Panel, GaugeRing, FactorDots } from './ui'
 
-export default function DecisionPanel({ stocks, advisor, focusTicker, onFocus }) {
+export default function DecisionPanel({ stocks, advisor, focusTicker, onFocus, onOpenStock }) {
   const ranked = [...stocks].sort((a, b) => (b.rankScore ?? 100 - b.riskScore) - (a.rankScore ?? 100 - a.riskScore))
   const pick = focusTicker || ranked[0]?.ticker || 'MSFT'
   const adv = advisor || {}
@@ -33,7 +33,7 @@ export default function DecisionPanel({ stocks, advisor, focusTicker, onFocus })
             {ranked.map((s, i) => (
               <tr
                 key={s.ticker}
-                onClick={() => onFocus?.(s.ticker)}
+                onClick={() => (onOpenStock ? onOpenStock(s.ticker) : onFocus?.(s.ticker))}
                 className={`border-b border-slate-800/60 cursor-pointer transition hover:bg-slate-800/30 ${
                   pick === s.ticker ? 'text-cyan-300 bg-cyan-500/5' : 'text-slate-300'
                 }`}

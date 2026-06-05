@@ -21,6 +21,7 @@ export default function NexusPhotoBoard({
   focusTicker,
   onFocus,
   onSelectStock,
+  onOpenStock,
   thesis,
   setThesis,
 }) {
@@ -31,7 +32,7 @@ export default function NexusPhotoBoard({
     <div className="flex-1 overflow-y-auto nexus-scroll p-4 space-y-4">
       <KpiRow topPick={top} />
 
-      <StockCards stocks={ordered} onSelect={onSelectStock} activeTicker={focusTicker} />
+      <StockCards stocks={ordered} onSelect={onOpenStock || onSelectStock} activeTicker={focusTicker} />
 
       {/* Matrix + Decision Engine — right column spans 2 rows */}
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-4 items-start">
@@ -58,6 +59,7 @@ export default function NexusPhotoBoard({
             advisor={advisor}
             focusTicker={focusTicker}
             onFocus={onFocus}
+            onOpenStock={onOpenStock}
           />
         </div>
       </div>

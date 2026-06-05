@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Sidebar from './components/Sidebar'
 import TopBar from './components/TopBar'
 import OverviewView from './views/OverviewView'
-import AnalyzeView from './views/AnalyzeView'
+import StockLiveDashboard from './views/StockLiveDashboard'
 import DeepDiveView from './views/DeepDiveView'
 import { DEFAULT_COMPARE } from './constants'
 import { fetchStock, fetchAdvisor, fetchStocksBatch } from './api'
@@ -14,7 +14,7 @@ export default function AlphaScopeNexus({ onOpenLegacy }) {
   const [timeframe, setTimeframe] = useState('1Y')
   const [riskProfile, setRiskProfile] = useState('Balanced')
 
-  const [compareTickers, setCompareTickers] = useState([...DEFAULT_COMPARE])
+  const [compareTickers] = useState([...DEFAULT_COMPARE])
   const [compareStocks, setCompareStocks] = useState([])
   const [focusTicker, setFocusTicker] = useState('MSFT')
   const [advisor, setAdvisor] = useState(null)
@@ -61,6 +61,18 @@ export default function AlphaScopeNexus({ onOpenLegacy }) {
     }
   }, [analyzeTicker])
 
+  const openStock = useCallback(
+    (sym) => {
+      const t = sym.trim().toUpperCase()
+      if (!t) return
+      setAnalyzeTicker(t)
+      setSearch(t)
+      setView('analyze')
+      runAnalyze(t)
+    },
+    [runAnalyze]
+  )
+
   const runDeep = useCallback(async (sym) => {
     const t = (sym || deepTicker).trim().toUpperCase()
     if (!t) return
@@ -77,16 +89,13 @@ export default function AlphaScopeNexus({ onOpenLegacy }) {
   }, [deepTicker])
 
   useEffect(() => {
-    if (view === 'analyze' && !analyzeStock) runAnalyze('AAPL')
     if (view === 'deep' && !deepStock) runDeep('MSFT')
   }, [view]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSearchSubmit = () => {
     const t = search.trim().toUpperCase()
     if (!t) return
-    setAnalyzeTicker(t)
-    setView('analyze')
-    runAnalyze(t)
+    openStock(t)
   }
 
   const navigate = (id) => {
@@ -94,18 +103,43 @@ export default function AlphaScopeNexus({ onOpenLegacy }) {
       onOpenLegacy?.()
       return
     }
+    if (id === 'analyze' && analyzeStock) {
+      setView('analyze')
+      return
+    }
     setView(id)
   }
 
-  const addToCompare = (t) => {
-    setCompareTickers((prev) => {
-      const next = [...prev]
-      if (next.includes(t)) return next
-      if (next.length >= 4) next.shift()
-      next.push(t)
-      return next.slice(-4)
-    })
-    setView('compare')
+  const photoProps = {
+    stocks: compareStocks,
+    advisor,
+    focusTicker,
+    onFocus: setFocusTicker,
+    onOpenStock: openStock,
+    onSelectStock: (t) => {
+      setFocusTicker(t)
+      fetchAdvisor(t).then(setAdvisor)
+    },
+    thesis,
+    setThesis,
+  }
+
+  /* Full-screen live stock terminal (photo #2) */
+  if (view === 'analyze') {
+    return (
+      <div className="nexus-root flex h-screen max-h-screen overflow-hidden">
+        <StockLiveDashboard
+          ticker={analyzeTicker}
+          stock={analyzeStock}
+          loading={loadingAnalyze}
+          search={search}
+          onSearch={setSearch}
+          onSearchSubmit={handleSearchSubmit}
+          onBack={() => setView('overview')}
+          onSelectStock={openStock}
+        />
+      </div>
+    )
   }
 
   return (
@@ -125,37 +159,7 @@ export default function AlphaScopeNexus({ onOpenLegacy }) {
           setRiskProfile={setRiskProfile}
         />
 
-        {(view === 'overview' || view === 'compare') && (
-          <OverviewView
-            stocks={compareStocks}
-            advisor={advisor}
-            focusTicker={focusTicker}
-            onFocus={setFocusTicker}
-            onSelectStock={(t) => {
-              setFocusTicker(t)
-              fetchAdvisor(t).then(setAdvisor)
-            }}
-            thesis={thesis}
-            setThesis={setThesis}
-          />
-        )}
-
-        {view === 'analyze' && (
-          <AnalyzeView
-            ticker={analyzeTicker}
-            setTicker={setAnalyzeTicker}
-            stock={analyzeStock}
-            loading={loadingAnalyze}
-            onSearch={(sym) => runAnalyze(sym)}
-            onDeepDive={() => {
-              setDeepTicker(analyzeTicker)
-              setView('deep')
-              runDeep(analyzeTicker)
-            }}
-            onAddToCompare={() => addToCompare(analyzeTicker)}
-            relatedStocks={compareStocks.filter((s) => s.ticker !== analyzeTicker).slice(0, 4)}
-          />
-        )}
+        {(view === 'overview' || view === 'compare') && <OverviewView {...photoProps} />}
 
         {view === 'deep' && (
           <DeepDiveView
@@ -169,7 +173,6 @@ export default function AlphaScopeNexus({ onOpenLegacy }) {
             setThesis={setThesis}
           />
         )}
-
       </div>
     </div>
   )
