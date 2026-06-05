@@ -1,10 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Sparkline } from '../components/ui'
+import TradingViewChart, { TIMEFRAME_TO_INTERVAL } from '../components/TradingViewChart'
 import {
   getLiveStockDetail,
-  generateCandles,
-  generateRsi,
-  generateMacd,
   MOCK_ORDER_BOOK,
   MOCK_NEWS,
   MOCK_SECTORS,
@@ -38,10 +36,8 @@ export default function StockLiveDashboard({
   const [timeframe, setTimeframe] = useState('1D')
   const [chartTab, setChartTab] = useState('Indices')
   const detail = useMemo(() => (stock ? getLiveStockDetail(stock.ticker) : null), [stock])
-  const candles = useMemo(() => (stock ? generateCandles(stock.ticker) : []), [stock])
-  const rsi = useMemo(() => generateRsi(candles), [candles])
-  const macd = useMemo(() => generateMacd(candles), [candles])
   const book = useMemo(() => MOCK_ORDER_BOOK(detail?.price ?? 192), [detail?.price])
+  const tvInterval = TIMEFRAME_TO_INTERVAL[timeframe] || 'D'
 
   if (loading || !detail) {
     return (
@@ -59,7 +55,6 @@ export default function StockLiveDashboard({
 
   return (
     <div className="flex-1 flex min-h-0 bg-[#0a0e17]">
-      {/* Left nav — matches live stock dashboard photo */}
       <aside className="w-[72px] shrink-0 border-r border-slate-800 bg-[#070b12] flex flex-col items-center py-4 gap-1">
         {NAV.map((item) => (
           <button
@@ -83,7 +78,6 @@ export default function StockLiveDashboard({
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
         <header className="h-14 shrink-0 border-b border-slate-800 bg-[#0c1018] px-4 flex items-center gap-4">
           <button type="button" onClick={onBack} className="text-slate-400 hover:text-white text-sm shrink-0">
             ← Overview
@@ -123,31 +117,25 @@ export default function StockLiveDashboard({
         </header>
 
         <div className="flex-1 overflow-y-auto nexus-scroll p-4 space-y-4">
-          {/* 5 summary cards */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <SummaryCard label="Current Price" value={`$${detail.price.toFixed(2)}`} spark={[40, 42, 41, 44, 45, 46, 48]} color="#3b82f6" />
-            <SummaryCard
-              label="Daily Change"
-              value={`${up ? '+' : ''}${detail.changeAbs}`}
-              positive={up}
-              spark={[44, 45, 46, 47, 48, 49, 50]}
-            />
+            <SummaryCard label="Daily Change" value={`${up ? '+' : ''}${detail.changeAbs}`} positive={up} spark={[44, 45, 46, 47, 48, 49, 50]} />
             <SummaryCard label="Change %" value={`${up ? '+' : ''}${detail.change.toFixed(2)}%`} positive={up} spark={[42, 43, 44, 45, 46, 47, 48]} />
             <SummaryCard label="Volume" value={`${detail.volume}M`} spark={[30, 50, 40, 60, 55, 70, 65]} color="#3b82f6" bar />
             <SummaryCard label="Market Cap" value={detail.marketCapDisplay} icon="🏢" />
           </div>
 
-          {/* Chart + right column */}
           <div className="grid grid-cols-1 xl:grid-cols-[1fr_280px] gap-4">
-            <div className="nexus-panel overflow-hidden">
-              <div className="px-4 py-3 border-b border-slate-700/50 flex flex-wrap items-center justify-between gap-2">
+            <div className="nexus-panel overflow-hidden flex flex-col">
+              <div className="px-4 py-3 border-b border-slate-700/50 flex flex-wrap items-center justify-between gap-2 shrink-0">
                 <div>
                   <p className="font-mono-nexus font-bold text-white">
                     {detail.ticker}{' '}
                     <span className="text-slate-400 font-normal text-sm">{detail.name}</span>
                   </p>
                   <p className="text-[10px] text-slate-500">
-                    {timeframe} · {detail.exchange} · O {detail.open} H {detail.high} L {detail.low} C {detail.price.toFixed(2)}
+                    TradingView · {detail.exchange} · O {detail.open} H {detail.high} L {detail.low} C{' '}
+                    {detail.price.toFixed(2)}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-1">
@@ -165,11 +153,21 @@ export default function StockLiveDashboard({
                   ))}
                 </div>
               </div>
-              <div className="p-3 space-y-2">
-                <CandlestickChart candles={candles} />
-                <VolumeBars candles={candles} />
-                <SubChart title="RSI (14)" data={rsi} color="#a855f7" height={56} />
-                <MacdChart data={macd} height={56} />
+
+              <div className="p-2 flex-1 min-h-[520px]">
+                <TradingViewChart ticker={detail.ticker} interval={tvInterval} height={520} />
+              </div>
+
+              <div className="px-4 py-2 border-t border-slate-700/50 flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-500 font-mono-nexus shrink-0">
+                <span>INDICATORS: RSI (14) · MACD · SMA · Volume · Bollinger Bands</span>
+                <a
+                  href="https://www.tradingview.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300"
+                >
+                  Powered by TradingView
+                </a>
               </div>
             </div>
 
@@ -181,7 +179,6 @@ export default function StockLiveDashboard({
             </div>
           </div>
 
-          {/* Bottom row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4">
             <WatchlistPanel rows={watchlist} active={detail.ticker} onSelect={onSelectStock} />
             <NewsPanel items={MOCK_NEWS} />
@@ -215,101 +212,6 @@ function VolumeBarsMini({ points }) {
       {points.map((p, i) => (
         <div key={i} className="flex-1 bg-blue-500/60 rounded-sm" style={{ height: `${(p / max) * 100}%` }} />
       ))}
-    </div>
-  )
-}
-
-function CandlestickChart({ candles }) {
-  const w = 600
-  const h = 200
-  const pad = 8
-  const prices = candles.flatMap((c) => [c.h, c.l])
-  const min = Math.min(...prices)
-  const max = Math.max(...prices)
-  const range = max - min || 1
-  const bw = (w - pad * 2) / candles.length - 2
-
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-[200px] bg-[#080c14] rounded-lg">
-      {[0.25, 0.5, 0.75].map((t) => (
-        <line key={t} x1={pad} y1={pad + t * (h - pad * 2)} x2={w - pad} y2={pad + t * (h - pad * 2)} stroke="#1e293b" strokeWidth="0.5" />
-      ))}
-      {candles.map((c, i) => {
-        const x = pad + i * (bw + 2)
-        const y = (v) => h - pad - ((v - min) / range) * (h - pad * 2)
-        const up = c.c >= c.o
-        const col = up ? '#22c55e' : '#ef4444'
-        return (
-          <g key={i}>
-            <line x1={x + bw / 2} y1={y(c.h)} x2={x + bw / 2} y2={y(c.l)} stroke={col} strokeWidth="1" />
-            <rect x={x} y={y(Math.max(c.o, c.c))} width={bw} height={Math.max(2, Math.abs(y(c.o) - y(c.c)))} fill={col} />
-          </g>
-        )
-      })}
-      <polyline
-        fill="none"
-        stroke="#3b82f6"
-        strokeWidth="1"
-        opacity="0.6"
-        points={candles.map((c, i) => `${pad + i * (bw + 2) + bw / 2},${h - pad - ((c.c - min) / range) * (h - pad * 2)}`).join(' ')}
-      />
-    </svg>
-  )
-}
-
-function VolumeBars({ candles }) {
-  const max = Math.max(...candles.map((c) => c.v))
-  return (
-    <div className="flex items-end gap-px h-10 px-1">
-      {candles.map((c, i) => (
-        <div
-          key={i}
-          className={`flex-1 rounded-t-sm opacity-70 ${c.c >= c.o ? 'bg-emerald-500/50' : 'bg-red-500/50'}`}
-          style={{ height: `${(c.v / max) * 100}%` }}
-        />
-      ))}
-    </div>
-  )
-}
-
-function SubChart({ title, data, color, height }) {
-  const w = 600
-  const min = Math.min(...data)
-  const max = Math.max(...data)
-  const range = max - min || 1
-  const pts = data.map((v, i) => `${(i / (data.length - 1)) * w},${height - ((v - min) / range) * (height - 8)}`).join(' ')
-  return (
-    <div>
-      <p className="text-[9px] text-slate-500 mb-1">{title}</p>
-      <svg viewBox={`0 0 ${w} ${height}`} className="w-full bg-[#080c14] rounded h-14">
-        <polyline fill="none" stroke={color} strokeWidth="1.5" points={pts} />
-      </svg>
-    </div>
-  )
-}
-
-function MacdChart({ data, height }) {
-  const w = 600
-  return (
-    <div>
-      <p className="text-[9px] text-slate-500 mb-1">MACD</p>
-      <svg viewBox={`0 0 ${w} ${height}`} className="w-full bg-[#080c14] rounded h-14">
-        {data.map((d, i) => {
-          const x = (i / data.length) * w
-          const barH = Math.abs(d.hist) * 8
-          return (
-            <rect
-              key={i}
-              x={x}
-              y={height / 2 - barH / 2}
-              width={w / data.length - 1}
-              height={barH}
-              fill={d.hist >= 0 ? '#3b82f6' : '#f97316'}
-              opacity="0.7"
-            />
-          )
-        })}
-      </svg>
     </div>
   )
 }
