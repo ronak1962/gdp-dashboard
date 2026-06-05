@@ -13,7 +13,7 @@ export default function DeepDiveView({
   setThesis,
 }) {
   return (
-    <div className="space-y-4 p-4 overflow-y-auto flex-1">
+    <div className="space-y-4 p-4 overflow-y-auto flex-1 nexus-scroll bg-transparent">
       <div className="flex flex-wrap gap-2 items-center">
         <input
           value={ticker}

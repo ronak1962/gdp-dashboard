@@ -10,21 +10,31 @@ export default function TopBar({
   setTimeframe,
   riskProfile,
   setRiskProfile,
-  viewLabel,
 }) {
   return (
-    <header className="border-b border-slate-700/50 bg-[#0a0f1a]/95 backdrop-blur px-5 py-3">
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex-1 min-w-[200px] max-w-xl">
+    <header className="border-b border-slate-800/80 bg-[#080c14]/90 backdrop-blur-md shrink-0">
+      <div className="px-5 py-2.5 border-b border-slate-800/40">
+        <h1 className="text-[15px] font-semibold text-white tracking-tight">
+          AlphaScope Nexus
+          <span className="text-slate-500 font-normal"> · Private Investor Intelligence</span>
+        </h1>
+      </div>
+      <div className="px-5 py-3 flex flex-wrap items-center gap-3">
+        <div className="flex-1 min-w-[240px] max-w-2xl">
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">⌕</span>
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="7" />
+                <path d="M20 20l-3-3" />
+              </svg>
+            </span>
             <input
               type="text"
               value={search}
               onChange={(e) => onSearch(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit?.()}
               placeholder="Search companies, sectors, metrics..."
-              className="w-full bg-slate-900/80 border border-slate-600/50 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50"
+              className="w-full bg-[#0c1220] border border-slate-700/60 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20"
             />
           </div>
         </div>
@@ -34,11 +44,13 @@ export default function TopBar({
         <FilterSelect label="Risk Profile" value={riskProfile} options={RISK_PROFILES} onChange={setRiskProfile} />
 
         <div className="ml-auto flex items-center gap-3">
-          <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">{viewLabel}</span>
-          <button type="button" className="text-xs text-slate-400 border border-slate-600 rounded-lg px-3 py-1.5 hover:border-cyan-500/40">
+          <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
+            <span className="w-8 h-4 rounded-full bg-cyan-500/30 border border-cyan-500/50 relative">
+              <span className="absolute right-0.5 top-0.5 w-3 h-3 rounded-full bg-cyan-400" />
+            </span>
             Client Workspace
-          </button>
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 border border-slate-500" title="Profile" />
+          </label>
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-500 to-slate-700 border-2 border-slate-600" />
         </div>
       </div>
     </header>
@@ -47,12 +59,12 @@ export default function TopBar({
 
 function FilterSelect({ label, value, options, onChange }) {
   return (
-    <label className="flex items-center gap-1.5 text-[10px] text-slate-500">
-      <span className="uppercase tracking-wider">{label}</span>
+    <div className="flex flex-col gap-0.5">
+      <span className="text-[9px] text-slate-500 uppercase tracking-wider font-medium">{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="bg-slate-900 border border-slate-600/50 rounded-md px-2 py-1.5 text-xs text-slate-200 focus:outline-none"
+        className="bg-[#0c1220] border border-slate-700/60 rounded-lg px-3 py-1.5 text-xs text-slate-200 min-w-[100px] focus:outline-none focus:border-cyan-500/40"
       >
         {options.map((o) => (
           <option key={o} value={o}>
@@ -60,6 +72,6 @@ function FilterSelect({ label, value, options, onChange }) {
           </option>
         ))}
       </select>
-    </label>
+    </div>
   )
 }

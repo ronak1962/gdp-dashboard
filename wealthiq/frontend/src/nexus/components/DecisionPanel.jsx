@@ -1,67 +1,61 @@
 import { Panel, GaugeRing, FactorDots } from './ui'
 
 export default function DecisionPanel({ stocks, advisor, focusTicker, onFocus }) {
-  const ranked = [...stocks].sort((a, b) => (a.riskScore ?? 50) - (b.riskScore ?? 50))
-  const top = ranked[0]
-  const pick = focusTicker || top?.ticker
+  const ranked = [...stocks].sort((a, b) => (b.rankScore ?? 100 - b.riskScore) - (a.rankScore ?? 100 - a.riskScore))
+  const pick = focusTicker || ranked[0]?.ticker || 'MSFT'
   const adv = advisor || {}
-  const factors = adv.factors || { momentum: 4, valuation: 3, quality: 5, risk: 4, timing: 4 }
+  const factors = adv.factors || { momentum: 5, valuation: 4, quality: 5, risk: 4, timing: 4 }
+  const confidence = adv.confidence ?? stocks.find((s) => s.ticker === pick)?.confidence ?? 86
 
   return (
-    <Panel title="Explainable Decision Engine" className="h-full flex flex-col">
-      <div className="space-y-4">
-        <div className="text-center p-3 rounded-lg bg-slate-900/60 border border-cyan-500/20">
-          <p className="text-[10px] text-slate-500 uppercase tracking-wider">Top Pick</p>
-          <p className="text-2xl font-mono font-bold text-cyan-300 mt-1">{pick}</p>
-          <div className="mt-2">
-            <GaugeRing value={adv.confidence ?? 86} stroke="#22d3ee" size={72} />
-          </div>
-          <p className="text-[10px] text-slate-400 mt-1">{adv.confidence ?? 86}% confidence</p>
+    <Panel title="Explainable Decision Engine" bodyClass="p-4 space-y-4">
+      <div className="rounded-xl bg-gradient-to-b from-cyan-500/10 to-transparent border border-cyan-500/25 p-4 text-center">
+        <p className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Top Pick</p>
+        <p className="text-3xl font-mono-nexus font-bold text-cyan-300 mt-1">{pick}</p>
+        <div className="mt-3 flex justify-center">
+          <GaugeRing value={confidence} stroke="#22d3ee" size={88} label={`${confidence}%`} />
         </div>
+        <p className="text-[10px] text-slate-500 mt-2">AI confidence</p>
+      </div>
 
-        <div>
-          <p className="text-[10px] text-slate-500 uppercase mb-2">Ranking</p>
-          <table className="w-full text-[11px]">
-            <thead>
-              <tr className="text-slate-500">
-                <th className="text-left py-1">#</th>
-                <th className="text-left">Ticker</th>
-                <th className="text-right">Score</th>
+      <div>
+        <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-2 font-semibold">Ranking</p>
+        <table className="w-full text-[11px]">
+          <thead>
+            <tr className="text-slate-500 border-b border-slate-700/50">
+              <th className="text-left py-1.5 font-medium">#</th>
+              <th className="text-left">Ticker</th>
+              <th className="text-right">Score</th>
+              <th className="text-right">Conf.</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ranked.map((s, i) => (
+              <tr
+                key={s.ticker}
+                onClick={() => onFocus?.(s.ticker)}
+                className={`border-b border-slate-800/60 cursor-pointer transition hover:bg-slate-800/30 ${
+                  pick === s.ticker ? 'text-cyan-300 bg-cyan-500/5' : 'text-slate-300'
+                }`}
+              >
+                <td className="py-2 font-mono-nexus text-slate-500">{i + 1}</td>
+                <td className="py-2 font-mono-nexus font-bold">{s.ticker}</td>
+                <td className="py-2 text-right font-mono-nexus">{s.rankScore ?? 100 - (s.riskScore ?? 40)}</td>
+                <td className="py-2 text-right font-mono-nexus text-cyan-400/80">{s.confidence ?? 70}%</td>
               </tr>
-            </thead>
-            <tbody>
-              {ranked.map((s, i) => (
-                <tr
-                  key={s.ticker}
-                  className={`border-t border-slate-800 cursor-pointer hover:bg-slate-800/40 ${pick === s.ticker ? 'text-cyan-300' : 'text-slate-300'}`}
-                  onClick={() => onFocus?.(s.ticker)}
-                >
-                  <td className="py-1.5">{i + 1}</td>
-                  <td className="font-mono font-bold">{s.ticker}</td>
-                  <td className="text-right font-mono">{100 - (s.riskScore ?? 40)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-        <div>
-          <p className="text-[10px] text-cyan-400 uppercase mb-2">Why {pick}?</p>
-          {Object.entries(factors).map(([k, v]) => (
-            <div key={k} className="flex items-center justify-between py-1.5 border-b border-slate-800/80">
-              <span className="text-xs text-slate-400 capitalize">{k}</span>
-              <FactorDots value={v} />
-            </div>
-          ))}
-        </div>
-
-        {adv.action && (
-          <div className="text-center">
-            <span className="inline-block px-4 py-1.5 rounded-full bg-emerald-500 text-white text-sm font-bold">
-              {adv.action}
-            </span>
+      <div className="rounded-lg bg-[#080c18]/60 border border-slate-700/40 p-3">
+        <p className="text-[11px] text-cyan-400 font-semibold mb-3">Why {pick}?</p>
+        {Object.entries(factors).map(([k, v]) => (
+          <div key={k} className="flex items-center justify-between py-2 border-b border-slate-800/50 last:border-0">
+            <span className="text-xs text-slate-400 capitalize">{k}</span>
+            <FactorDots value={v} />
           </div>
-        )}
+        ))}
       </div>
     </Panel>
   )

@@ -1,19 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.nexus-root {
-  font-family: 'Inter', system-ui, sans-serif;
-}
-
-.nexus-panel {
-  @apply rounded-xl border border-slate-700/50 bg-[#0c1220]/90 backdrop-blur-sm;
+  background: #04060d;
 }
 
 #root {
   min-height: 100vh;
+}
+
+.nexus-root {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: radial-gradient(ellipse 120% 80% at 50% -20%, rgba(34, 211, 238, 0.08), transparent 50%),
+    radial-gradient(ellipse 80% 50% at 100% 50%, rgba(99, 102, 241, 0.06), transparent 40%),
+    #04060d;
+}
+
+.nexus-panel {
+  background: linear-gradient(180deg, rgba(15, 22, 40, 0.95) 0%, rgba(10, 14, 26, 0.98) 100%);
+  border: 1px solid rgba(71, 85, 105, 0.35);
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.nexus-panel-header {
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(71, 85, 105, 0.35);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.nexus-panel-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(34, 211, 238, 0.85);
+}
+
+.nexus-panel-sub {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  color: #64748b;
+}
+
+.nexus-kpi {
+  min-height: 108px;
+}
+
+.nexus-stock-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.nexus-stock-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--stock-accent, #22d3ee) 0%, transparent 50%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.nexus-sidebar-active {
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.15) 0%, rgba(34, 211, 238, 0.03) 100%);
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  color: #67e8f9;
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.08);
+}
+
+.nexus-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #334155 transparent;
+}
+
+.nexus-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.nexus-scroll::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+
+.font-mono-nexus {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
 }

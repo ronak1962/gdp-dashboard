@@ -3,16 +3,23 @@ import { MOCK_CATALYSTS, MOCK_SCENARIOS } from '../mockData'
 
 export function ScenarioStudio({ ticker }) {
   const scenarios = MOCK_SCENARIOS(ticker)
-  const colors = { Bull: 'border-emerald-500/40 bg-emerald-500/5', Base: 'border-cyan-500/40 bg-cyan-500/5', Bear: 'border-red-500/40 bg-red-500/5' }
+  const styles = {
+    Bull: 'from-emerald-500/20 to-emerald-900/5 border-emerald-500/30',
+    Base: 'from-cyan-500/15 to-slate-900/5 border-cyan-500/25',
+    Bear: 'from-red-500/15 to-red-900/5 border-red-500/30',
+  }
   return (
     <Panel title="Scenario Studio" subtitle="AI probabilities">
       <div className="grid grid-cols-3 gap-2">
         {scenarios.map((sc) => (
-          <div key={sc.case} className={`rounded-lg border p-3 ${colors[sc.case] || ''}`}>
-            <p className="text-xs font-bold text-white">{sc.case} Case</p>
-            <p className="text-lg font-mono text-emerald-400 mt-1">{sc.move}</p>
-            <p className="text-[10px] text-slate-400 mt-1">{sc.range}</p>
-            <p className="text-[10px] text-cyan-400 mt-2">{sc.prob}% prob</p>
+          <div
+            key={sc.case}
+            className={`rounded-xl border bg-gradient-to-b p-3 ${styles[sc.case]}`}
+          >
+            <p className="text-[10px] font-bold text-slate-400 uppercase">{sc.case} Case</p>
+            <p className="text-xl font-mono-nexus font-bold text-white mt-1">{sc.move}</p>
+            <p className="text-[10px] text-slate-500 mt-1 font-mono-nexus">{sc.range}</p>
+            <p className="text-[11px] text-cyan-400 font-semibold mt-2">{sc.prob}% probability</p>
           </div>
         ))}
       </div>
@@ -21,38 +28,42 @@ export function ScenarioStudio({ ticker }) {
 }
 
 export function CapitalMix({ stocks }) {
-  const total = stocks.length || 1
-  const pct = Math.floor(100 / total)
-  const remainder = 100 - pct * (total - 1)
+  const weights = [28, 32, 22, 18]
+  let offset = 0
+  const r = 36
+  const c = 2 * Math.PI * r
+
   return (
     <Panel title="Capital Allocation Mix">
       <div className="flex items-center gap-4">
-        <svg viewBox="0 0 100 100" className="w-24 h-24 shrink-0">
+        <svg viewBox="0 0 96 96" className="w-28 h-28 shrink-0">
           {stocks.map((s, i) => {
-            const slice = i === stocks.length - 1 ? remainder : pct
-            const offset = stocks.slice(0, i).reduce((acc) => acc + (i === stocks.length - 1 ? remainder : pct), 0)
-            return (
+            const pct = weights[i] ?? 25
+            const dash = (pct / 100) * c
+            const el = (
               <circle
                 key={s.ticker}
-                cx="50"
-                cy="50"
-                r="40"
+                cx="48"
+                cy="48"
+                r={r}
                 fill="none"
                 stroke={colorFor(s.ticker)}
-                strokeWidth="12"
-                strokeDasharray={`${slice * 2.51} 251`}
-                strokeDashoffset={-offset * 2.51}
-                transform="rotate(-90 50 50)"
+                strokeWidth="10"
+                strokeDasharray={`${dash} ${c - dash}`}
+                strokeDashoffset={-offset}
+                transform="rotate(-90 48 48)"
               />
             )
+            offset += dash
+            return el
           })}
         </svg>
-        <ul className="space-y-1 text-xs">
+        <ul className="space-y-2 text-xs flex-1">
           {stocks.map((s, i) => (
             <li key={s.ticker} className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full" style={{ background: colorFor(s.ticker) }} />
-              <span className="font-mono text-white">{s.ticker}</span>
-              <span className="text-slate-500">{i === stocks.length - 1 ? remainder : pct}%</span>
+              <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: colorFor(s.ticker) }} />
+              <span className="font-mono-nexus font-bold text-white w-12">{s.ticker}</span>
+              <span className="text-slate-500 ml-auto font-mono-nexus">{weights[i]}%</span>
             </li>
           ))}
         </ul>
@@ -62,32 +73,51 @@ export function CapitalMix({ stocks }) {
 }
 
 export function PerformanceDNA({ stocks }) {
-  const w = 400
-  const h = 140
-  const pad = 24
-  const lines = stocks.map((s, si) => {
-    const pts = Array.from({ length: 12 }, (_, i) => 50 + si * 5 + i * (s.change >= 0 ? 2 : -1) + Math.sin(i + si) * 8)
-    const min = 30
-    const max = 90
-    const coords = pts.map((p, i) => {
-      const x = pad + (i / 11) * (w - pad * 2)
-      const y = h - pad - ((p - min) / (max - min)) * (h - pad * 2)
-      return `${x},${y}`
-    }).join(' ')
-    return { ticker: s.ticker, coords, color: colorFor(s.ticker) }
-  })
+  const w = 480
+  const h = 160
+  const pad = 32
 
   return (
-    <Panel title="Normalized Performance DNA" subtitle="1Y relative">
-      <svg viewBox={`0 0 ${w} ${h}`} className="w-full max-h-[160px]">
-        {lines.map((l) => (
-          <polyline key={l.ticker} fill="none" stroke={l.color} strokeWidth="2" points={l.coords} />
+    <Panel title="Normalized Performance DNA" subtitle="1Y indexed">
+      <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-[140px]">
+        {[0.25, 0.5, 0.75].map((t) => (
+          <line
+            key={t}
+            x1={pad}
+            y1={h - pad - t * (h - pad * 2)}
+            x2={w - pad}
+            y2={h - pad - t * (h - pad * 2)}
+            stroke="#1e293b"
+            strokeWidth="1"
+          />
         ))}
+        {stocks.map((s, si) => {
+          const pts = Array.from({ length: 24 }, (_, i) => 50 + si * 4 + i * (s.change >= 0 ? 1.2 : -0.6) + Math.sin(i * 0.4 + si) * 6)
+          const min = 35
+          const max = 95
+          const coords = pts
+            .map((p, i) => {
+              const x = pad + (i / 23) * (w - pad * 2)
+              const y = h - pad - ((p - min) / (max - min)) * (h - pad * 2)
+              return `${x},${y}`
+            })
+            .join(' ')
+          return (
+            <polyline
+              key={s.ticker}
+              fill="none"
+              stroke={colorFor(s.ticker)}
+              strokeWidth="2.5"
+              points={coords}
+              strokeLinecap="round"
+            />
+          )
+        })}
       </svg>
-      <div className="flex flex-wrap gap-3 mt-2">
+      <div className="flex flex-wrap gap-4 mt-2 justify-center">
         {stocks.map((s) => (
-          <span key={s.ticker} className="text-[10px] font-mono flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full" style={{ background: colorFor(s.ticker) }} />
+          <span key={s.ticker} className="text-[10px] font-mono-nexus flex items-center gap-1.5 text-slate-400">
+            <span className="w-3 h-0.5 rounded" style={{ background: colorFor(s.ticker) }} />
             {s.ticker}
           </span>
         ))}
@@ -98,50 +128,57 @@ export function PerformanceDNA({ stocks }) {
 
 export function CompareTable({ stocks }) {
   return (
-    <Panel title="Peer Comparison Table" className="overflow-x-auto">
-      <table className="w-full text-[11px]">
-        <thead>
-          <tr className="text-slate-500 border-b border-slate-700">
-            <th className="text-left py-2">Ticker</th>
-            <th className="text-right">Price</th>
-            <th className="text-right">Chg%</th>
-            <th className="text-right">P/E</th>
-            <th className="text-right">EPS</th>
-            <th className="text-right">Rev Gr</th>
-            <th className="text-right">Vol</th>
-            <th className="text-right">RSI</th>
-            <th className="text-right">Signal</th>
-          </tr>
-        </thead>
-        <tbody>
-          {stocks.map((s) => (
-            <tr key={s.ticker} className="border-b border-slate-800/80 text-slate-200">
-              <td className="py-2 font-mono font-bold text-cyan-300">{s.ticker}</td>
-              <td className="text-right font-mono">${s.price?.toFixed(2)}</td>
-              <td className={`text-right font-mono ${s.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                {s.change >= 0 ? '+' : ''}{s.change?.toFixed(2)}%
-              </td>
-              <td className="text-right font-mono">{s.pe?.toFixed(1)}</td>
-              <td className="text-right font-mono">{s.eps ?? '—'}</td>
-              <td className="text-right font-mono">{s.revenueGrowth?.toFixed(1)}%</td>
-              <td className="text-right font-mono">{s.volatility ?? 22}%</td>
-              <td className="text-right font-mono">{s.rsi ?? 58}</td>
-              <td className="text-right">
-                <SignalCell signal={s.signal} />
-              </td>
+    <Panel title="Peer Comparison" bodyClass="p-0 overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-[11px]">
+          <thead>
+            <tr className="text-slate-500 bg-[#080c18]/80 border-b border-slate-700/50">
+              <th className="text-left py-3 px-4 font-semibold">Ticker</th>
+              <th className="text-right px-2 py-3">Price</th>
+              <th className="text-right px-2 py-3">Chg%</th>
+              <th className="text-right px-2 py-3">P/E</th>
+              <th className="text-right px-2 py-3">EPS</th>
+              <th className="text-right px-2 py-3">Rev Gr</th>
+              <th className="text-right px-2 py-3">Vol</th>
+              <th className="text-right px-2 py-3">RSI</th>
+              <th className="text-right px-2 py-3">Avg Vol</th>
+              <th className="text-right px-4 py-3">Final Signal</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {stocks.map((s) => (
+              <tr key={s.ticker} className="border-b border-slate-800/50 hover:bg-slate-800/20 text-slate-200">
+                <td className="py-2.5 px-4 font-mono-nexus font-bold text-cyan-300">{s.ticker}</td>
+                <td className="text-right px-2 font-mono-nexus">${s.price?.toFixed(2)}</td>
+                <td className={`text-right px-2 font-mono-nexus ${s.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {s.change >= 0 ? '+' : ''}{s.change?.toFixed(2)}%
+                </td>
+                <td className="text-right px-2 font-mono-nexus">{s.pe?.toFixed(1)}</td>
+                <td className="text-right px-2 font-mono-nexus">{s.eps?.toFixed(2)}</td>
+                <td className="text-right px-2 font-mono-nexus">{s.revenueGrowth?.toFixed(1)}%</td>
+                <td className="text-right px-2 font-mono-nexus">{s.volatility}%</td>
+                <td className="text-right px-2 font-mono-nexus">{s.rsi}</td>
+                <td className="text-right px-2 font-mono-nexus">{s.avgVolume}M</td>
+                <td className="text-right px-4">
+                  <SignalCell signal={s.signal} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </Panel>
   )
 }
 
 function SignalCell({ signal }) {
   const s = (signal || 'HOLD').toUpperCase()
-  const cls =
-    s.includes('STRONG') ? 'bg-emerald-700' : s === 'BUY' ? 'bg-emerald-500' : 'bg-amber-500 text-slate-900'
-  return <span className={`text-[9px] font-bold px-2 py-0.5 rounded ${cls} text-white`}>{s}</span>
+  const cls = s.includes('STRONG')
+    ? 'bg-emerald-800 text-white'
+    : s === 'BUY'
+      ? 'bg-emerald-500 text-white'
+      : 'bg-amber-400 text-slate-900'
+  return <span className={`text-[9px] font-bold px-2.5 py-1 rounded-md inline-block ${cls}`}>{s}</span>
 }
 
 export function CatalystTimeline() {
@@ -149,9 +186,9 @@ export function CatalystTimeline() {
     <Panel title="Catalyst Timeline">
       <ul className="space-y-3">
         {MOCK_CATALYSTS.map((c) => (
-          <li key={c.title} className="flex gap-3 text-xs">
-            <span className="text-cyan-400 font-mono shrink-0 w-20">{c.date}</span>
-            <span className="text-slate-300">{c.title}</span>
+          <li key={c.title} className="flex gap-3 text-xs border-l-2 border-cyan-500/40 pl-3">
+            <span className="text-cyan-400 font-mono-nexus shrink-0 w-12 font-semibold">{c.date}</span>
+            <span className="text-slate-300 leading-relaxed">{c.title}</span>
           </li>
         ))}
       </ul>
@@ -159,14 +196,14 @@ export function CatalystTimeline() {
   )
 }
 
-export function ThesisBox({ value, onChange, ticker }) {
+export function ThesisBox({ value, onChange }) {
   return (
     <Panel title="My Investment Thesis">
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={`Why ${ticker || 'these picks'} fit your client portfolio...`}
-        className="w-full h-24 bg-slate-900/80 border border-slate-600/50 rounded-lg p-3 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 resize-none"
+        placeholder="Document your rationale for this allocation..."
+        className="w-full h-28 bg-[#080c18] border border-slate-700/50 rounded-xl p-3 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 resize-none leading-relaxed"
       />
     </Panel>
   )

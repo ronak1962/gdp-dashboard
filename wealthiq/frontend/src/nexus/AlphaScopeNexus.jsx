@@ -4,16 +4,8 @@ import TopBar from './components/TopBar'
 import OverviewView from './views/OverviewView'
 import AnalyzeView from './views/AnalyzeView'
 import DeepDiveView from './views/DeepDiveView'
-import CompareView from './views/CompareView'
 import { DEFAULT_COMPARE } from './constants'
 import { fetchStock, fetchAdvisor, fetchStocksBatch } from './api'
-
-const VIEW_LABELS = {
-  overview: 'Overview · Client home',
-  analyze: 'Stock Analysis · Single ticker',
-  deep: 'Deep Dive · Decision engine',
-  compare: 'Peer Lab · 4-stock matrix',
-}
 
 export default function AlphaScopeNexus({ onOpenLegacy }) {
   const [view, setView] = useState('overview')
@@ -51,7 +43,7 @@ export default function AlphaScopeNexus({ onOpenLegacy }) {
   }, [compareTickers, loadCompare])
 
   useEffect(() => {
-    if (view === 'compare' && focusTicker) {
+    if ((view === 'compare' || view === 'overview') && focusTicker) {
       fetchAdvisor(focusTicker).then(setAdvisor)
     }
   }, [focusTicker, view])
@@ -131,17 +123,20 @@ export default function AlphaScopeNexus({ onOpenLegacy }) {
           setTimeframe={setTimeframe}
           riskProfile={riskProfile}
           setRiskProfile={setRiskProfile}
-          viewLabel={VIEW_LABELS[view]}
         />
 
-        {view === 'overview' && (
+        {(view === 'overview' || view === 'compare') && (
           <OverviewView
-            stocks={compareStocks.length ? compareStocks : []}
-            onNavigate={navigate}
-            onAnalyzeTicker={(t) => {
-              setAnalyzeTicker(t)
-              runAnalyze(t)
+            stocks={compareStocks}
+            advisor={advisor}
+            focusTicker={focusTicker}
+            onFocus={setFocusTicker}
+            onSelectStock={(t) => {
+              setFocusTicker(t)
+              fetchAdvisor(t).then(setAdvisor)
             }}
+            thesis={thesis}
+            setThesis={setThesis}
           />
         )}
 
@@ -175,22 +170,6 @@ export default function AlphaScopeNexus({ onOpenLegacy }) {
           />
         )}
 
-        {view === 'compare' && (
-          <CompareView
-            stocks={compareStocks}
-            advisor={advisor}
-            focusTicker={focusTicker}
-            onFocus={setFocusTicker}
-            onSelectStock={(t) => {
-              setFocusTicker(t)
-              setAnalyzeTicker(t)
-              runAnalyze(t)
-              setView('analyze')
-            }}
-            thesis={thesis}
-            setThesis={setThesis}
-          />
-        )}
       </div>
     </div>
   )
