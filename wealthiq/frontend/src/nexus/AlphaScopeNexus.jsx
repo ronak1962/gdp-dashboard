@@ -3,7 +3,7 @@ import Sidebar from './components/Sidebar'
 import TopBar from './components/TopBar'
 import OverviewView from './views/OverviewView'
 import StockLiveDashboard from './views/StockLiveDashboard'
-import DeepDiveView from './views/DeepDiveView'
+import DeepAnalysisDashboard from './views/DeepAnalysisDashboard'
 import { DEFAULT_COMPARE } from './constants'
 import { fetchStock, fetchAdvisor, fetchStocksBatch } from './api'
 
@@ -61,18 +61,6 @@ export default function AlphaScopeNexus({ onOpenLegacy }) {
     }
   }, [analyzeTicker])
 
-  const openStock = useCallback(
-    (sym) => {
-      const t = sym.trim().toUpperCase()
-      if (!t) return
-      setAnalyzeTicker(t)
-      setSearch(t)
-      setView('analyze')
-      runAnalyze(t)
-    },
-    [runAnalyze]
-  )
-
   const runDeep = useCallback(async (sym) => {
     const t = (sym || deepTicker).trim().toUpperCase()
     if (!t) return
@@ -88,14 +76,39 @@ export default function AlphaScopeNexus({ onOpenLegacy }) {
     }
   }, [deepTicker])
 
+  const openStock = useCallback(
+    (sym) => {
+      const t = sym.trim().toUpperCase()
+      if (!t) return
+      setAnalyzeTicker(t)
+      setSearch(t)
+      setView('analyze')
+      runAnalyze(t)
+    },
+    [runAnalyze]
+  )
+
+  const openDeep = useCallback(
+    (sym) => {
+      const t = (sym || deepTicker).trim().toUpperCase()
+      if (!t) return
+      setDeepTicker(t)
+      setSearch(t)
+      setView('deep')
+      runDeep(t)
+    },
+    [deepTicker, runDeep]
+  )
+
   useEffect(() => {
-    if (view === 'deep' && !deepStock) runDeep('MSFT')
+    if (view === 'deep' && !deepStock) runDeep(deepTicker || 'AAPL')
   }, [view]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSearchSubmit = () => {
     const t = search.trim().toUpperCase()
     if (!t) return
-    openStock(t)
+    if (view === 'deep') openDeep(t)
+    else openStock(t)
   }
 
   const navigate = (id) => {
@@ -116,6 +129,7 @@ export default function AlphaScopeNexus({ onOpenLegacy }) {
     focusTicker,
     onFocus: setFocusTicker,
     onOpenStock: openStock,
+    onOpenDeep: openDeep,
     onSelectStock: (t) => {
       setFocusTicker(t)
       fetchAdvisor(t).then(setAdvisor)
@@ -124,7 +138,26 @@ export default function AlphaScopeNexus({ onOpenLegacy }) {
     setThesis,
   }
 
-  /* Full-screen live stock terminal (photo #2) */
+  /* Full-screen deep analysis (multi-chart + AI) */
+  if (view === 'deep') {
+    return (
+      <div className="nexus-root flex h-screen max-h-screen overflow-hidden">
+        <DeepAnalysisDashboard
+          ticker={deepTicker}
+          stock={deepStock}
+          advisor={deepAdvisor}
+          loading={loadingDeep}
+          onBack={() => setView('overview')}
+          onSearch={() => runDeep()}
+          onSelectTicker={openDeep}
+          search={search}
+          onSearchChange={setSearch}
+        />
+      </div>
+    )
+  }
+
+  /* Full-screen live stock terminal */
   if (view === 'analyze') {
     return (
       <div className="nexus-root flex h-screen max-h-screen overflow-hidden">
@@ -137,6 +170,7 @@ export default function AlphaScopeNexus({ onOpenLegacy }) {
           onSearchSubmit={handleSearchSubmit}
           onBack={() => setView('overview')}
           onSelectStock={openStock}
+          onDeepAnalysis={() => openDeep(analyzeTicker)}
         />
       </div>
     )
@@ -160,19 +194,6 @@ export default function AlphaScopeNexus({ onOpenLegacy }) {
         />
 
         {(view === 'overview' || view === 'compare') && <OverviewView {...photoProps} />}
-
-        {view === 'deep' && (
-          <DeepDiveView
-            ticker={deepTicker}
-            setTicker={setDeepTicker}
-            stock={deepStock}
-            advisor={deepAdvisor}
-            loading={loadingDeep}
-            onSearch={() => runDeep()}
-            thesis={thesis}
-            setThesis={setThesis}
-          />
-        )}
       </div>
     </div>
   )

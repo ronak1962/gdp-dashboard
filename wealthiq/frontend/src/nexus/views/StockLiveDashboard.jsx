@@ -28,6 +28,7 @@ export default function StockLiveDashboard({
   loading,
   onBack,
   onSelectStock,
+  onDeepAnalysis,
   search,
   onSearch,
   onSearchSubmit,
@@ -79,6 +80,15 @@ export default function StockLiveDashboard({
           <button type="button" onClick={onBack} className="text-slate-400 hover:text-white text-sm shrink-0">
             ← Overview
           </button>
+          {onDeepAnalysis && (
+            <button
+              type="button"
+              onClick={onDeepAnalysis}
+              className="text-xs px-3 py-1.5 rounded-lg bg-violet-600/80 text-white font-semibold hover:bg-violet-500 shrink-0"
+            >
+              Deep Analysis
+            </button>
+          )}
           <h1 className="text-sm font-semibold text-white shrink-0 hidden lg:block">
             Live Stock Market Analysis Dashboard
           </h1>

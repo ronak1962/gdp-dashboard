@@ -22,6 +22,7 @@ export default function NexusPhotoBoard({
   onFocus,
   onSelectStock,
   onOpenStock,
+  onOpenDeep,
   thesis,
   setThesis,
 }) {
@@ -60,6 +61,7 @@ export default function NexusPhotoBoard({
             focusTicker={focusTicker}
             onFocus={onFocus}
             onOpenStock={onOpenStock}
+            onOpenDeep={onOpenDeep}
           />
         </div>
       </div>
