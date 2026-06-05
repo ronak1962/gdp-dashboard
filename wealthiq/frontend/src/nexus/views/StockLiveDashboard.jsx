@@ -1,13 +1,12 @@
 import { useMemo, useState } from 'react'
 import { Sparkline } from '../components/ui'
-import TradingViewChart, { TIMEFRAME_TO_INTERVAL } from '../components/TradingViewChart'
+import StockTradingViewAnalysis from '../components/StockTradingViewAnalysis'
 import {
   getLiveStockDetail,
   MOCK_ORDER_BOOK,
   MOCK_NEWS,
   MOCK_SECTORS,
   MOCK_WATCHLIST,
-  CHART_TIMEFRAMES,
 } from '../mock/liveStockData'
 
 const NAV = [
@@ -33,11 +32,9 @@ export default function StockLiveDashboard({
   onSearch,
   onSearchSubmit,
 }) {
-  const [timeframe, setTimeframe] = useState('1D')
   const [chartTab, setChartTab] = useState('Indices')
   const detail = useMemo(() => (stock ? getLiveStockDetail(stock.ticker) : null), [stock])
   const book = useMemo(() => MOCK_ORDER_BOOK(detail?.price ?? 192), [detail?.price])
-  const tvInterval = TIMEFRAME_TO_INTERVAL[timeframe] || 'D'
 
   if (loading || !detail) {
     return (
@@ -125,58 +122,19 @@ export default function StockLiveDashboard({
             <SummaryCard label="Market Cap" value={detail.marketCapDisplay} icon="🏢" />
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-[1fr_280px] gap-4">
-            <div className="nexus-panel overflow-hidden flex flex-col">
-              <div className="px-4 py-3 border-b border-slate-700/50 flex flex-wrap items-center justify-between gap-2 shrink-0">
-                <div>
-                  <p className="font-mono-nexus font-bold text-white">
-                    {detail.ticker}{' '}
-                    <span className="text-slate-400 font-normal text-sm">{detail.name}</span>
-                  </p>
-                  <p className="text-[10px] text-slate-500">
-                    TradingView · {detail.exchange} · O {detail.open} H {detail.high} L {detail.low} C{' '}
-                    {detail.price.toFixed(2)}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {CHART_TIMEFRAMES.map((tf) => (
-                    <button
-                      key={tf}
-                      type="button"
-                      onClick={() => setTimeframe(tf)}
-                      className={`px-2 py-1 rounded text-[10px] font-mono-nexus ${
-                        timeframe === tf ? 'bg-blue-500 text-white' : 'text-slate-500 hover:bg-slate-800'
-                      }`}
-                    >
-                      {tf}
-                    </button>
-                  ))}
-                </div>
-              </div>
+          <StockTradingViewAnalysis
+            ticker={detail.ticker}
+            onTickerChange={(t) => onSearch?.(t)}
+            onSearch={onSelectStock}
+            chartHeight={580}
+            showHeader={false}
+          />
 
-              <div className="p-2 flex-1 min-h-[520px]">
-                <TradingViewChart ticker={detail.ticker} interval={tvInterval} height={520} />
-              </div>
-
-              <div className="px-4 py-2 border-t border-slate-700/50 flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-500 font-mono-nexus shrink-0">
-                <span>INDICATORS: RSI (14) · MACD · SMA · Volume · Bollinger Bands</span>
-                <a
-                  href="https://www.tradingview.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-400 hover:text-blue-300"
-                >
-                  Powered by TradingView
-                </a>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <RiskGauge level={detail.riskLevel} score={detail.riskScore} />
-              <OrderBook book={book} />
-              <DayRange low={detail.dayLow} high={detail.dayHigh} current={detail.price} />
-              <KeyStats detail={detail} />
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+            <RiskGauge level={detail.riskLevel} score={detail.riskScore} />
+            <OrderBook book={book} />
+            <DayRange low={detail.dayLow} high={detail.dayHigh} current={detail.price} />
+            <KeyStats detail={detail} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4">
